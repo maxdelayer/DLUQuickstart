@@ -53,6 +53,7 @@ ln -s "$DLUQSREPO/config/resources.py" "$DLUQSREPO/AccountManager/resources.py"
 if ! [ -d "$DLUQSREPO/utils" ]; then
 	cd "$DLUQSREPO"
 	pip3 install git+https://github.com/lcdr/utils
+	git clone https://github.com/lcdr/utils
 fi
 
 echo -e "Done!"
