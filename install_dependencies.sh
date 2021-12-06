@@ -3,7 +3,7 @@
 # Where THIS repo is on your server's filesystem
 DLUQSREPO="/home/ubuntu/DLUQuickstart"
 
-# Clone the DLU Server repository
+# Clone the DLU Server repository if not dont already
 if ! [ -d "$DLUQSREPO/DarkflameServer" ]; then
 	git clone --recursive https://github.com/DarkflameUniverse/DarkflameServer
 fi
@@ -52,7 +52,7 @@ ln -s "$DLUQSREPO/config/resources.py" "$DLUQSREPO/AccountManager/resources.py"
 ### Get Utilities for unpacking client files
 if ! [ -d "$DLUQSREPO/utils" ]; then
 	cd "$DLUQSREPO"
-	git clone https://github.com/lcdr/utils
+	pip3 install git+https://github.com/lcdr/utils
 fi
 
 echo -e "Done!"
