@@ -5,7 +5,9 @@ I'm writing this pretty late and on short notice so forgive any mistakes as I'm 
 
 # Disclaimer
 
-This is intended to make it much **easier** for someone **with some prior unix command line experience** to set up their own DLU server for themselves and their friends. I would not necessarily recommend this as a plug-and-play solution to a nontechnical audience. If you want to google esoteric problems and . If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
+This is intended to make it much **easier** for someone **with some prior unix command line experience** to set up their own DLU server for themselves and their friends. I would not necessarily recommend this as a plug-and-play solution to a nontechnical audience. 
+
+If you want to google esoteric problems and learn and problem solve and have the time to waste doing it? Awesome, I hope this helps you in your journey. If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
 
 ## Table of Contents:
 
@@ -13,6 +15,7 @@ This is intended to make it much **easier** for someone **with some prior unix c
  - Step 2: Installing Darkflame Universe & Dependencies
  - Step 3: Acquiring & Extracting Client
  - Step 4: Linking Client Files To Server
+ - Step 5: Server Configuration
  - Step 5: Operations/Production
 
 ## Step 1: Provisioning Infrastructure
