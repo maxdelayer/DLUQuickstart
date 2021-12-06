@@ -35,19 +35,11 @@ if ! [ -d "$DLUQSREPO/AccountManager" ]; then
 fi
 
 # Install requirements
-pip3 -r "$DLUQSREPO/AccountManager/requirements.txt"
+pip3 install -r "$DLUQSREPO/AccountManager/requirements.txt"
 
 # Symbolically link files for account manager
 ln -s "$DLUQSREPO/config/credentials.py" "$DLUQSREPO/AccountManager/credentials.py"
 ln -s "$DLUQSREPO/config/resources.py" "$DLUQSREPO/AccountManager/resources.py"
-
-# Symbolically link files for server itself
-# TODO: is this a good idea? uhhhhh maybe lets not
-# Use Sed to change your config instead! (update_config.sh)
-#ln -s "$DLUQSREPO/config/authconfig.ini"   "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
-#ln -s "$DLUQSREPO/config/chatconfig.ini"   "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
-#ln -s "$DLUQSREPO/config/worldconfig.ini"  "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
-#ln -s "$DLUQSREPO/config/masterconfig.ini" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 
 ### Get Utilities for unpacking client files
 if ! [ -d "$DLUQSREPO/utils" ]; then
