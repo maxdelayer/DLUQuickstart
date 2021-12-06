@@ -29,8 +29,8 @@ DATABASEPATH="$DLUQSREPO/0_initial.mysql"
 sudo mysql -u root DLU < $DATABASEPATH
 
 ### Create Account Manager
-cd "$DLUQSREPO"
 if ! [ -d "$DLUQSREPO/AccountManager" ]; then
+	cd "$DLUQSREPO"
 	git clone https://github.com/DarkflameUniverse/AccountManager
 fi
 
@@ -48,5 +48,11 @@ ln -s "$DLUQSREPO/config/resources.py" "$DLUQSREPO/AccountManager/resources.py"
 #ln -s "$DLUQSREPO/config/chatconfig.ini"   "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
 #ln -s "$DLUQSREPO/config/worldconfig.ini"  "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
 #ln -s "$DLUQSREPO/config/masterconfig.ini" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+
+### Get Utilities for unpacking client files
+if ! [ -d "$DLUQSREPO/utils" ]; then
+	cd "$DLUQSREPO"
+	git clone https://github.com/lcdr/utils
+fi
 
 echo -e "Done!"
