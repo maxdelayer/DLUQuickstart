@@ -36,4 +36,8 @@ echo "CREATE USER '$MYSQLUSER'@'$MYSQLHOST' IDENTIFIED WITH mysql_native_passwor
 echo "GRANT ALL ON $MYSQLDB . * TO '$MYSQLUSER'@'$MYSQLHOST';" | sudo mysql -u root 
 echo "FLUSH PRIVILEGES;" | sudo mysql -u root 
 
+# Edit credentials.py
+
+sed -i "s|DB_URL = 'mysql+pymysql://<mysql-user>:<mysql-password>@<mysql-host>/<mysql-database>'|DB_URL = 'mysql+pymysql://$MYSQLUSER:$MYSQLPASS@$MYSQLHOST/<$MYSQLDB'|g" "$DLUQSREPO/config/credentials.py"
+
 echo -e "Done!"
