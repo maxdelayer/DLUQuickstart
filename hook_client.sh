@@ -20,4 +20,9 @@ ln -s "$CLIENTROOT/locale/locale.xml" "$DLUQSREPO/DarkflameServer/build/res/loca
 
 python3 "$DLUQSREPO/utils/utils/fdb_to_sqlite.py" --sqlite_path "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$CLIENTROOT/res/cdclient.fdb"
 
+# Extra transactions to fix game breaking bugs
+cat "$DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+cat "$DLUQSREPO/DarkflameServer/migrations/cdserver/1_fix_overbuild_mission.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+cat "$DLUQSREPO/DarkflameServer/migrations/cdserver/2_script_component.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+
 echo -e "Done!"
