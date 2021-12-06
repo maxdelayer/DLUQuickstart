@@ -9,6 +9,8 @@ This is intended to make it much **easier** for someone **with some prior unix c
 
 If you want to google esoteric problems and learn and problem solve and have the time to waste doing it? Awesome, I hope this helps you in your journey. If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
 
+In the event where things aren't explained here, check DarkflameServer's readme, it may elaborate, or it may just confuse you further.
+
 ## Table of Contents:
 
  - Step 1: Provisioning Infrastructure
@@ -124,3 +126,5 @@ you can also add a & to make it run in the background (if you want to disconnect
 ```
 sudo ./MasterServer &
 ```
+
+# Good luck!
