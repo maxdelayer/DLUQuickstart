@@ -18,6 +18,8 @@ sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g
 # I had trouble compiling when using an AWS t3.micro instance (2vCPUs, 1GB RAM) due to ram limitations (probably) but could compile with a t3.small instance (2vCPUs, 2GB RAM)
 echo -e "\n\nBuilding..."
 cd "$DLUQSREPO/DarkflameServer"
+# Leaving this chmod +x in until they merge my pull request to mark it as executable
+chmod +x build.sh
 ./build.sh
 
 ### CREATE DATABASE

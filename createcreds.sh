@@ -38,6 +38,6 @@ echo "FLUSH PRIVILEGES;" | sudo mysql -u root
 
 # Edit credentials.py
 
-sed -i "s|DB_URL = 'mysql+pymysql://<mysql-user>:<mysql-password>@<mysql-host>/<mysql-database>'|DB_URL = 'mysql+pymysql://$MYSQLUSER:$MYSQLPASS@$MYSQLHOST/<$MYSQLDB'|g" "$DLUQSREPO/config/credentials.py"
+sed -i "s|DB_URL = 'mysql+pymysql://<mysql-user>:<mysql-password>@<mysql-host>/<mysql-database>'|DB_URL = 'mysql+pymysql://$MYSQLUSER:$MYSQLPASS@$MYSQLHOST/$MYSQLDB'|g" "$DLUQSREPO/config/credentials.py"
 
 echo -e "Done!"
