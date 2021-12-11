@@ -18,19 +18,19 @@ sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g
 # I had trouble compiling when using an AWS t3.micro instance (2vCPUs, 1GB RAM) due to ram limitations (probably) but could compile with a t3.small instance (2vCPUs, 2GB RAM)
 echo -e "\n\nBuilding..."
 cd "$DLUQSREPO/DarkflameServer"
+
 # Leaving this chmod +x in until they merge my pull request to mark it as executable
 chmod +x build.sh
 ./build.sh
 
 ### CREATE DATABASE
-echo -e "\n\nCreating Database..."
-echo "CREATE DATABASE DLU;" | sudo mysql -u root 
+# UNCOMMENT THIS IF YOU'RE INSTALLING FOR THE FIRST TIME
+#echo -e "\n\nCreating Database..."
+#echo "CREATE DATABASE DLU;" | sudo mysql -u root 
 
-# Choose the correct sql file to use. Because mysql complains, I made a custom one
+# Choose the correct sql file to use.
 #DATABASEPATH="$DLUREPO/DarkflameServer/migrations/dlu/0_initial.sql"
-DATABASEPATH="$DLUQSREPO/0_initial.mysql"
-
-sudo mysql -u root DLU < $DATABASEPATH
+#sudo mysql -u root DLU < $DATABASEPATH
 
 ### Create Account Manager
 if ! [ -d "$DLUQSREPO/AccountManager" ]; then
