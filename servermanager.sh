@@ -16,8 +16,10 @@ function buildServer() {
 
 function killServer() {
 	MASTERPID=`ps -C 'MasterServer' -o pid=`
-	sudo kill -9 $MASTERPID
-	sleep 15
+	if [[ $MASTERPID ]]; then
+		sudo kill -9 $MASTERPID
+		sleep 25
+	fi
 }
 
 # Get arguments
@@ -46,8 +48,8 @@ if [[ "$#" -gt 0 ]];then
 	ITER=$((ITER+1))
 	done
 else
-	echo -e "\n\tERROR: Please supply an argument!" 
-	echo -e "\n\t\tKill server: -k/--kill"
-	echo -e "\n\t\tRestart server: -r/--restart"
-	echo -e "\n\t\tRecompile server: -R/--recompile"
+	echo -e "\tERROR: Please supply an argument!" 
+	echo -e "\t\t- Kill server: -k/--kill"
+	echo -e "\t\t- Restart server: -r/--restart"
+	echo -e "\t\t- Recompile server: -R/--recompile"
 fi
