@@ -10,11 +10,12 @@ function runServer() {
 
 function buildServer() {
 	cd $DLUDirectory/DarkflameServer/
+	git pull
 	./build.sh
 }
 
 function killServer() {
-	MASTERPID=`ps -C 'MasterServer' -o pid= | `
+	MASTERPID=`ps -C 'MasterServer' -o pid=`
 	sudo kill -9 $MASTERPID
 	sleep 15
 }
