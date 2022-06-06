@@ -118,7 +118,7 @@ python3 app.py
 - Go to your server's IP address, port 5000 in your web browser (https://127.0.0.1:5000)
   - Log in with that admin account and generate keys
   - Direct players to that website's `/activate` page to use those keys to create an account
--  Use `servermanager.sh` to run your server
+- Use `servermanager.sh` to run your server:
   - Run the server: `./servermanager.sh -r`
   - Turn off the server: `./servermanager.sh -k`
   - Recompile and restart the server with the latest updates: `./servermanager.sh -R`
