@@ -118,13 +118,10 @@ python3 app.py
 - Go to your server's IP address, port 5000 in your web browser (https://127.0.0.1:5000)
   - Log in with that admin account and generate keys
   - Direct players to that website's `/activate` page to use those keys to create an account
-- Run your server
-```
-sudo ./MasterServer
-```
-you can also add a & to make it run in the background (if you want to disconnect your session but keep the server running
-```
-sudo ./MasterServer &
-```
+- Use `servermanager.sh` to run your server:
+  - Run the server: `./servermanager.sh -r`
+  - Turn off the server: `./servermanager.sh -k`
+  - Recompile and restart the server with the latest updates: `./servermanager.sh -R`
+  - Consider using servermanager.sh as a cron job for scheduled server reboots
 
 # Good luck!
