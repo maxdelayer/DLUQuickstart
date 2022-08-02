@@ -80,7 +80,7 @@ function hookClient() {
 	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/cdclient.sqlite":
 
 	# Re-run any database migrations
-	"$DLUQSREPO/build/MasterServer" -m
+	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
 }
 
 # In development
@@ -130,8 +130,11 @@ function killDashboard() {
 }
 
 function backUpDatabase(){
-	BACKUPLOCATION=$(whiptail --inputbox "Where should the backup be stored?" 8 40 "$DLUQSREPO/DLUbackup.sql" --title "Input Needed To Continue")
-	sudo mysqldump "$DATABASENAME" > "$BACKUPLOCATION"
+	#whiptail kinda breaks over ssh
+	#BACKUPLOCATION=$(whiptail --inputbox "Where should the backup be stored?" 8 40 "$DLUQSREPO/DLUbackup.sql" --title "Input Needed To Continue")
+	read -p "What should the backup be named?" BACKUPNAME
+	sudo mysqldump "$DATABASENAME" > "$DLUQSREPO/$BACKUPNAME"
+	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
 }
 
 # Get arguments
