@@ -22,6 +22,14 @@ function killServer() {
 	fi
 }
 
+function runDashboard() {
+	gunicorn -b :8000 -w wsgi:app
+}
+
+function killDashboard() {
+	exit
+}
+
 # Get arguments
 if [[ "$#" -gt 0 ]];then 
 	ITER=1

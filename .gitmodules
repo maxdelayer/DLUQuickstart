@@ -1,0 +1,9 @@
+[submodule "NexusDashboard"]
+	path = NexusDashboard
+	url = https://github.com/DarkFlameUniverse/NexusDashboard
+[submodule "utils"]
+	path = utils
+	url = https://github.com/lcdr/utils
+[submodule "DarkflameServer"]
+	path = DarkflameServer
+	url = https://github.com/DarkflameUniverse/DarkflameServer
