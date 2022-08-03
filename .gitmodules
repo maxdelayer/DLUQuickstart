@@ -5,7 +5,7 @@
 [submodule "utils"]
 	path = utils
 	url = https://github.com/lcdr/utils
-	branch = main
+	branch = master
 [submodule "DarkflameServer"]
 	path = DarkflameServer
 	url = https://github.com/DarkflameUniverse/DarkflameServer
