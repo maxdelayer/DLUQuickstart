@@ -9,6 +9,7 @@ DATABASENAME="DLU"
 function updateSubmodules(){
 	git pull
 	git submodule update --init --recursive
+	git submodule foreach git pull
 }
 
 # Build the server with your own settings. AKA, skip using build.sh
