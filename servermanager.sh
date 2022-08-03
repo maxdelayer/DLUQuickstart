@@ -5,6 +5,8 @@ DLUQSREPO=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CLIENTROOT="$DLUQSREPO/client/"
 DATABASENAME="DLU"
 
+### INSTALLATION FUNCTIONS ###
+
 # This grabs all the other repositories used (DarkFlameServer, NexusDashboard, and lcdr utils)
 function updateSubmodules(){
 	git pull
@@ -53,9 +55,7 @@ function hookClient() {
 	ln -s "$CLIENTROOT/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/textures"
 	ln -s "$CLIENTROOT/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/ui"
 
-	cp    "$CLIENTROOT/res/brickdb.zip" "$DLUQSREPO/NexusDashboard/brickdb.zip"
-	unzip "$DLUQSREPO/NexusDashboard/brickdb.zip"
-	rm    "$DLUQSREPO/NexusDashboard/brickdb.zip"
+	unzip "$DLUQSREPO/NexusDashboard/brickdb.zip" -d "$DLUQSREPO/NexusDashboard/"
 
 	### Link DLU Server
 	ln -s "$CLIENTROOT/res/macros"              "$DLUQSREPO/DarkflameServer/build/res/macros"
@@ -66,8 +66,7 @@ function hookClient() {
 	ln -s "$CLIENTROOT/res/maps"                "$DLUQSREPO/DarkflameServer/build/res/maps"
 
 	# Unzip navmeshes
-	unzip "$DLUQSREPO/DarkflameServer/resources/navmeshes.zip"
-	ln -s "$DLUQSREPO/DarkflameServer/resources/navmeshes" "$DLUQSREPO/DarkflameServer/build/res/maps/navmeshes"
+	unzip "$DLUQSREPO/DarkflameServer/resources/navmeshes.zip" -d "$DLUQSREPO/DarkflameServer/build/res/maps/"
 
 	# Link Locale file
 	if ! [ -d "$DLUQSREPO/DarkflameServer/build/res/locale/" ]; then
@@ -78,10 +77,17 @@ function hookClient() {
 	# Convert fdb to sqlite
 	python3 "$DLUQSREPO/utils/utils/fdb_to_sqlite.py" --sqlite_path "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$CLIENTROOT/res/cdclient.fdb"
 
-	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/cdclient.sqlite":
+	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/cdclient.sqlite"
 
 	# Re-run any database migrations
 	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
+	
+	# Manual SQLITE migration running as a test:
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/1_fix_overbuild_mission.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/2_script_component.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/3_plunger_gun_fix.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/4_nt_footrace_parrot.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 }
 
 # In development
@@ -101,6 +107,8 @@ function installApache(){
 	sudo a2enmod rewrite
 	sudo a2enmod ssl
 }
+
+### OPERATIONS FUNCTIONS ###
 
 function runServer() {
 	cd "$DLUQSREPO/DarkflameServer/build/"
@@ -131,8 +139,6 @@ function killDashboard() {
 }
 
 function backUpDatabase(){
-	#whiptail kinda breaks over ssh
-	#BACKUPLOCATION=$(whiptail --inputbox "Where should the backup be stored?" 8 40 "$DLUQSREPO/DLUbackup.sql" --title "Input Needed To Continue")
 	read -p "What should the backup be named?" BACKUPNAME
 	sudo mysqldump "$DATABASENAME" > "$DLUQSREPO/$BACKUPNAME"
 	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
