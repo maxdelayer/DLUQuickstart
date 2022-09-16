@@ -53,7 +53,7 @@ function hookClient() {
 	# Grab a lego universe client. If you have one, you can manually move it into place, if not, hey, check out this one I found
 	CLIENTNAME="LEGO Universe (unpacked).rar"
 	CLIENTLINK="https://archive.org/download/lego-universe-unpacked/$CLIENTNAME"
-	wget $CLIENTLINK -P "$CLIENTROOT/"
+	wget "$CLIENTLINK" -P "$CLIENTROOT/"
 	unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
 
 	### Link Nexus Dashboard
