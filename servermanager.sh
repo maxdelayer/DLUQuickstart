@@ -23,6 +23,7 @@ function buildDLU(){
 	
 	mkdir -p "$DLUQSREPO/DarkflameServer/build"
 	cd       "$DLUQSREPO/DarkflameServer/build"
+	#make clean
 	cmake ..
 	make -j2 && ./MasterServer -m
 }
@@ -49,6 +50,12 @@ function installDependencies(){
 }
 
 function hookClient() {
+	# Grab a lego universe client. If you have one, you can manually move it into place, if not, hey, check out this one I found
+	CLIENTNAME="LEGO Universe (unpacked).rar"
+	CLIENTLINK="https://archive.org/download/lego-universe-unpacked/$CLIENTNAME"
+	wget $CLIENTLINK -P $CLIENTROOT/
+	unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
+
 	### Link Nexus Dashboard
 	ln -s "$CLIENTROOT/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/locale"
 	ln -s "$CLIENTROOT/res/BrickModels"     "$DLUQSREPO/NexusDashboard/app/luclient/BrickModels"
@@ -83,12 +90,53 @@ function hookClient() {
 	# Re-run any database migrations
 	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
 	
-	# Manual SQLITE migration running as a test:
+	# Manual SQLITE migration running since the above has been inconsistent from my experience:
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/1_fix_overbuild_mission.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/2_script_component.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/3_plunger_gun_fix.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/4_nt_footrace_parrot.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+}
+
+# In development
+function configureDatabase(){
+	echo "WARNING: This script simplifies the configuration of your DLU server, but is NOT a replacement for good secret/password management or a secure MySQL configuration. REMEMBER the passwords you use here"
+	
+	MYSQLUSER="dluadmin"
+	MYSQLPASS="fortheloveofallthatisgoodandholychangethispasswordbeforeyourunthis"
+	MYSQLHOST="localhost"
+	MYSQLDB="DLU"
+	
+	read -p "Enter the password for the newly created database user:" MYSQLPASS
+	
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
+	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
+	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
+
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
+	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
+	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
+
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+
+	echo "CREATE USER '$MYSQLUSER'@'$MYSQLHOST' IDENTIFIED WITH mysql_native_password BY '$MYSQLPASS';" | sudo mysql -u root 
+	echo "GRANT ALL ON $MYSQLDB . * TO '$MYSQLUSER'@'$MYSQLHOST';" | sudo mysql -u root 
+	echo "FLUSH PRIVILEGES;" | sudo mysql -u root 
+
+	# Edit credentials.py
+
+	#sed -i "s|DB_URL = 'mysql+pymysql://<mysql-user>:<mysql-password>@<mysql-host>/<mysql-database>'|DB_URL = 'mysql+pymysql://$MYSQLUSER:$MYSQLPASS@$MYSQLHOST/$MYSQLDB'|g" "$DLUQSREPO/config/credentials.py"
+	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 }
 
 # In development
@@ -167,9 +215,16 @@ if [[ "$#" -gt 0 ]];then
 			"-b"|"--backup")
 				backUpDatabase
 				;;
+			"-d"|"--dashboard")
+				killDashboard
+				runDashboard
+				;;
 			"--install")
 				installDependencies
 				hookClient
+				;;
+			"--configure-database")
+				configureDatabase
 				;;
 			*)
 				;;
@@ -181,9 +236,13 @@ else
 	echo -e "ERROR: Please supply an argument!" 
 	echo -e "INSTALLATION:"
 	echo -e "\t- Install:          --install"
-	echo -e "OPERATIONS:"
+	echo -e "\t- Configure:        --configure-database"
+	echo -e "DLU SERVER OPERATIONS:"
 	echo -e "\t- Kill server:      -k/--kill"
 	echo -e "\t- Restart server:   -r/--restart"
 	echo -e "\t- Recompile server: -R/--recompile"
 	echo -e "\t- Back up Database: -b/--backup"
+	echo -e "NEXUS DASHBOARD:"
+	echo -e "\t- Restart Nexus Dashboard: -d/--dashboard"
+	
 fi
