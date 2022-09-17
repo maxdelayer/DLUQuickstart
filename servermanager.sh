@@ -111,6 +111,7 @@ function configureDatabase(){
 	
 	read -p "Enter the password for the newly created database user:" MYSQLPASS
 	
+	# Edit all the config files for each server with this information
 	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
 	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
 	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
@@ -131,13 +132,13 @@ function configureDatabase(){
 	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 
+	# Create the database user
 	echo "CREATE USER '$MYSQLUSER'@'$MYSQLHOST' IDENTIFIED WITH mysql_native_password BY '$MYSQLPASS';" | sudo mysql -u root 
 	echo "GRANT ALL ON $MYSQLDB . * TO '$MYSQLUSER'@'$MYSQLHOST';" | sudo mysql -u root 
 	echo "FLUSH PRIVILEGES;" | sudo mysql -u root 
 
-	# Edit credentials.py
-
-	#sed -i "s|DB_URL = 'mysql+pymysql://<mysql-user>:<mysql-password>@<mysql-host>/<mysql-database>'|DB_URL = 'mysql+pymysql://$MYSQLUSER:$MYSQLPASS@$MYSQLHOST/$MYSQLDB'|g" "$DLUQSREPO/config/credentials.py"
+	# Add database password in the Nexus Dashboard config
+	# If you change the database name/etc., you'll need to manually change those
 	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 }
 
@@ -195,6 +196,7 @@ function backUpDatabase(){
 	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
 }
 
+# TODO; Polish input section
 # Get arguments
 if [[ "$#" -gt 0 ]];then 
 	ITER=1
@@ -246,5 +248,4 @@ else
 	echo -e "\t- Back up Database: -b/--backup"
 	echo -e "NEXUS DASHBOARD:"
 	echo -e "\t- Restart Nexus Dashboard: -d/--dashboard"
-	
 fi
