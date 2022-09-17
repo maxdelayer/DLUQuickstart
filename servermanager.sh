@@ -43,7 +43,9 @@ function installDependencies(){
 
 	### CREATE DATABASE
 	echo -e "Creating database..."
-	echo "CREATE DATABASE IF NOT EXISTS $DATABASENAME;" | sudo mysql -u root 
+	echo "CREATE DATABASE IF NOT EXISTS $DATABASENAME;" | sudo mysql -u root
+	
+	sudo mysql -u root $DATABASENAME < "$DLUQSREPO/DarkflameServer/migrations/dlu/0_initial.sql"
 
 	### Compile DLU
 	buildDLU
