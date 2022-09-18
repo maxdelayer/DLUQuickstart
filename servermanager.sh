@@ -170,7 +170,7 @@ function configureDatabase(){
 function installApache(){
 	read -p "Enter the DNS name of the server: " DOMAINNAME
 
-	sed -i "s/ServerName change.this.to.your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu-sites-available.conf"
+	sed -i "s/ServerName change.this.to.your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
 
 	sudo ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
 	sudo ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
@@ -202,13 +202,11 @@ function killServer() {
 	fi
 }
 
-# Testing
 function runDashboard() {
 	cd "$DLUQSREPO/NexusDashboard/"
 	gunicorn -b :8000 -w 4 wsgi:app &
 }
 
-# Testing
 function killDashboard() {
 	DASHPID=`ps -C 'gunicorn' -o pid=`
 	if [[ $DASHPID ]]; then
