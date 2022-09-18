@@ -146,7 +146,7 @@ function configureDatabase(){
 	# If you change the database name/etc., you'll need to manually change those
 	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
-	read -p "Make an admin account? [y/n]: " MAKEUSER
+	read -p "\nMake an admin account? [y/n]: " MAKEUSER
 	if [[ $MAKEUSER == "y" ]]; then
 		cd "$DLUQSREPO/DarkflameServer/build/"
 		./MasterServer -a
@@ -161,7 +161,8 @@ function configureDatabase(){
 	flask db upgrade
 	
 	# Re-run any DLU server database migrations
-	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
+	cp "$DLUQSREPO/DarkflameServer/build/"
+	./MasterServer -m
 }
 
 # You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https and dns
