@@ -162,7 +162,7 @@ function configureDatabase(){
 	flask db upgrade
 	
 	# Re-run any DLU server database migrations
-	cp "$DLUQSREPO/DarkflameServer/build/"
+	cd "$DLUQSREPO/DarkflameServer/build/"
 	./MasterServer -m
 }
 
