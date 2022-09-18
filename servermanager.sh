@@ -96,9 +96,6 @@ function hookClient() {
 	python3 "$DLUQSREPO/utils/utils/fdb_to_sqlite.py" --sqlite_path "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$CLIENTROOT/res/cdclient.fdb"
 
 	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/cdclient.sqlite"
-
-	# Re-run any database migrations
-	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
 	
 	# Manual SQLITE migration running since the above has been inconsistent from my experience:
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql"           | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
@@ -162,6 +159,9 @@ function configureDatabase(){
 	# Upgrade database with columns necessary for Nexus Dashboard
 	cd "$DLUQSREPO/NexusDashboard/"
 	flask db upgrade
+	
+	# Re-run any DLU server database migrations
+	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
 }
 
 # You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https and dns
