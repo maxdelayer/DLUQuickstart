@@ -65,9 +65,8 @@ function hookClient() {
 	
 	# Create necessary folders
 	mkdir "$DLUQSREPO/NexusDashboard/app/luclient/res"
-	mkdir "$DLUQSREPO/NexusDashboard/app/luclient/local"
 	
-	ln -s "$CLIENTROOT/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/local/locale"
+	ln -s "$CLIENTROOT/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/locale"
 	ln -s "$CLIENTROOT/res/BrickModels"     "$DLUQSREPO/NexusDashboard/app/luclient/res/BrickModels"
 	ln -s "$CLIENTROOT/res/brickprimitives" "$DLUQSREPO/NexusDashboard/app/luclient/res/brickprimitives"
 	ln -s "$CLIENTROOT/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/res/textures"
@@ -171,6 +170,15 @@ function installApache(){
 	read -p "Enter the DNS name of the server: " DOMAINNAME
 
 	sed -i "s/ServerName your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
+
+	# TODO; set external_ip based on DNS, or allow it manually
+	#read -p "Auto grab IP from this domain name?" IPCHOOSE
+	#if [[ $IPCHOOSE == "y" ]]; then
+	#	EXTIP=``
+	#else
+	#	read -p "Enter the external IP of the server:" EXTIP
+	#fi
+	#sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g"         "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 
 	sudo ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
 	sudo ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
