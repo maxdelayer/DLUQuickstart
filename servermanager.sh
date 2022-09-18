@@ -61,14 +61,19 @@ function hookClient() {
 	fi
 	
 	### Link Nexus Dashboard
-	ln -s "$CLIENTROOT/locale"                  "$DLUQSREPO/NexusDashboard/app/luclient/locale"
-	ln -s "$CLIENTROOT/res/BrickModels"         "$DLUQSREPO/NexusDashboard/app/luclient/BrickModels"
-	ln -s "$CLIENTROOT/res/brickprimitives"     "$DLUQSREPO/NexusDashboard/app/luclient/brickprimitives"
-	ln -s "$CLIENTROOT/res/textures"            "$DLUQSREPO/NexusDashboard/app/luclient/textures"
-	ln -s "$CLIENTROOT/res/ui"                  "$DLUQSREPO/NexusDashboard/app/luclient/ui"
 	ln -s "$DLUQSREPO/config/nexusdashboard.py" "$DLUQSREPO/NexusDashboard/app/settings.py"
+	
+	# Create necessary folders
+	mkdir "$DLUQSREPO/NexusDashboard/app/luclient/res"
+	mkdir "$DLUQSREPO/NexusDashboard/app/luclient/local"
+	
+	ln -s "$CLIENTROOT/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/local/locale"
+	ln -s "$CLIENTROOT/res/BrickModels"     "$DLUQSREPO/NexusDashboard/app/luclient/res/BrickModels"
+	ln -s "$CLIENTROOT/res/brickprimitives" "$DLUQSREPO/NexusDashboard/app/luclient/res/brickprimitives"
+	ln -s "$CLIENTROOT/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/res/textures"
+	ln -s "$CLIENTROOT/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/res/ui"
 
-	unzip "$DLUQSREPO/NexusDashboard/brickdb.zip" -d "$DLUQSREPO/NexusDashboard/"
+	unzip "$CLIENTROOT/res/brickdb.zip" -d  "$DLUQSREPO/NexusDashboard/app/luclient/res/"
 
 	### Link DLU Server
 	ln -s "$CLIENTROOT/res/macros"              "$DLUQSREPO/DarkflameServer/build/res/macros"
