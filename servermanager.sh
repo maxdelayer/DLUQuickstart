@@ -55,7 +55,7 @@ function hookClient() {
 	CLIENTNAME="LEGO Universe (unpacked).rar"
 	CLIENTLINK="https://archive.org/download/lego-universe-unpacked/$CLIENTNAME"
 	# Only downloads if the file isn't already present
-	if [[ ! -f "$CLIENTROOT/$CLIENTNAME"]];then
+	if [[ ! -f "$CLIENTROOT/$CLIENTNAME" ]]; then
 		wget "$CLIENTLINK" -P "$CLIENTROOT/"
 		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
 	fi
