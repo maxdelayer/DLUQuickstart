@@ -39,7 +39,6 @@ function installDependencies(){
 	### Install Nexus Dashboard dependencies
 	pip3 install gunicorn
 	pip3 install -r "$DLUQSREPO/NexusDashboard/requirements.txt"
-	flask db upgrade
 
 	### CREATE DATABASE
 	echo -e "Creating database..."
@@ -94,11 +93,11 @@ function hookClient() {
 	"$DLUQSREPO/DarkflameServer/build/MasterServer" -m
 	
 	# Manual SQLITE migration running since the above has been inconsistent from my experience:
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql"           | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/1_fix_overbuild_mission.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/2_script_component.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/3_plunger_gun_fix.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/4_nt_footrace_parrot.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/2_script_component.sql"      | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/3_plunger_gun_fix.sql"       | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
+	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/4_nt_footrace_parrot.sql"    | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 }
 
 # In development
@@ -110,7 +109,7 @@ function configureDatabase(){
 	MYSQLHOST="localhost"
 	MYSQLDB="DLU"
 	
-	read -p "Enter the password for the newly created database user:" MYSQLPASS
+	read -s -p "Enter the password for the newly created database user: " MYSQLPASS
 	
 	# Edit all the config files for each server with this information
 	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
@@ -145,17 +144,20 @@ function configureDatabase(){
 	# Generate random 32 character string for you. You're welcome.
 	RANDOMSTRING=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`
 	sed -i "s|APP_SECRET_KEY = \"\"|APP_SECRET_KEY = \"$RANDOMSTRING\"|g" "$DLUQSREPO/config/nexusdashboard.py"
+	
+	# Upgrade database with columns necessary for Nexus Dashboard
+	cd "$DLUQSREPO/NexusDashboard/"
+	flask db upgrade
 }
 
 # In development
 function installApache(){
-	#sudo cp -r "$DLUQSREPO/AccountManager/" /var/www/dlu/
-	#sudo mv /var/www/dlu/app.py /var/www/dlu/dlu.py
+	read -p "Enter the DNS name of the server: " DOMAINNAME
 
 	sed -i "s/ServerName change.this.to.your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu-sites-available.conf"
 
 	sudo ln -s "$DLUQSREPO/config/dlu-sites-available.conf" /etc/apache2/sites-available/dlu.conf
-	sudo ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
+	sudo ln -s /etc/apache2/sites-available/dlu.conf        /etc/apache2/sites-enabled/dlu.conf
 
 	sudo a2ensite "$DOMAINNAME"
 
@@ -187,11 +189,17 @@ function killServer() {
 
 # Testing
 function runDashboard() {
+	cd "$DLUQSREPO/NexusDashboard/"
 	gunicorn -b :8000 -w wsgi:app
 }
 
 # Not functional yet
 function killDashboard() {
+	DASHPID=`ps -C 'gunicorn' -o pid=`
+	if [[ $DASHPID ]]; then
+		sudo kill -9 $DASHPID
+		sleep 25
+	fi
 	exit
 }
 
