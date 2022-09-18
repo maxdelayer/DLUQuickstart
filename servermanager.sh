@@ -144,6 +144,11 @@ function configureDatabase(){
 	# If you change the database name/etc., you'll need to manually change those
 	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
+	read -p "Make an admin account? [y/n]: " MAKEUSER
+	if [[ $MAKEUSER == "y"]]; then
+		"$DLUQSREPO/DarkflameServer/build/MasterServer" -a
+	fi
+	
 	# Generate random 32 character string for you. You're welcome.
 	RANDOMSTRING=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`
 	sed -i "s|APP_SECRET_KEY = \"\"|APP_SECRET_KEY = \"$RANDOMSTRING\"|g" "$DLUQSREPO/config/nexusdashboard.py"
@@ -193,7 +198,7 @@ function killServer() {
 # Testing
 function runDashboard() {
 	cd "$DLUQSREPO/NexusDashboard/"
-	gunicorn -b :8000 -w 4 wsgi:app
+	gunicorn -b :8000 -w 4 wsgi:app &
 }
 
 # Testing
@@ -238,6 +243,9 @@ if [[ "$#" -gt 0 ]];then
 				killDashboard
 				runDashboard
 				;;
+			"-dk"|"--dashboard-kill")
+				killDashboard
+				;;
 			"--install")
 				installDependencies
 				hookClient
@@ -263,4 +271,5 @@ else
 	echo -e "\t- Back up Database:  -b/--backup"
 	echo -e "NEXUS DASHBOARD:"
 	echo -e "\t- Restart Dashboard: -d/--dashboard"
+	echo -e "\t- Kill Dashboard:    -dk/--dashboard-kill"
 fi
