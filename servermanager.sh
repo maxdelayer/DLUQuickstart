@@ -54,16 +54,19 @@ function hookClient() {
 	# Grab a lego universe client. If you have one, you can manually move it into place, if not, hey, check out this one I found
 	CLIENTNAME="LEGO Universe (unpacked).rar"
 	CLIENTLINK="https://archive.org/download/lego-universe-unpacked/$CLIENTNAME"
-	wget "$CLIENTLINK" -P "$CLIENTROOT/"
-	unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
-
+	# Only downloads if the file isn't already present
+	if [[ ! -f "$CLIENTROOT/$CLIENTNAME"]];then
+		wget "$CLIENTLINK" -P "$CLIENTROOT/"
+		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
+	fi
+	
 	### Link Nexus Dashboard
-	ln -s "$CLIENTROOT/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/locale"
-	ln -s "$CLIENTROOT/res/BrickModels"     "$DLUQSREPO/NexusDashboard/app/luclient/BrickModels"
-	ln -s "$CLIENTROOT/res/brickprimitives" "$DLUQSREPO/NexusDashboard/app/luclient/brickprimitives"
-	ln -s "$CLIENTROOT/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/textures"
-	ln -s "$CLIENTROOT/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/ui"
-	ln -s "$DLUQSREPO/config/nexusdashboard.py"              "$DLUQSREPO/NexusDashboard/app/settings.py"
+	ln -s "$CLIENTROOT/locale"                  "$DLUQSREPO/NexusDashboard/app/luclient/locale"
+	ln -s "$CLIENTROOT/res/BrickModels"         "$DLUQSREPO/NexusDashboard/app/luclient/BrickModels"
+	ln -s "$CLIENTROOT/res/brickprimitives"     "$DLUQSREPO/NexusDashboard/app/luclient/brickprimitives"
+	ln -s "$CLIENTROOT/res/textures"            "$DLUQSREPO/NexusDashboard/app/luclient/textures"
+	ln -s "$CLIENTROOT/res/ui"                  "$DLUQSREPO/NexusDashboard/app/luclient/ui"
+	ln -s "$DLUQSREPO/config/nexusdashboard.py" "$DLUQSREPO/NexusDashboard/app/settings.py"
 
 	unzip "$DLUQSREPO/NexusDashboard/brickdb.zip" -d "$DLUQSREPO/NexusDashboard/"
 
@@ -112,23 +115,23 @@ function configureDatabase(){
 	read -s -p "Enter the password for the newly created database user: " MYSQLPASS
 	
 	# Edit all the config files for each server with this information
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
 	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
 	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
 
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
 	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
 	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
 
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
 	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
 	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
 
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 
@@ -193,14 +196,13 @@ function runDashboard() {
 	gunicorn -b :8000 -w wsgi:app
 }
 
-# Not functional yet
+# Testing
 function killDashboard() {
 	DASHPID=`ps -C 'gunicorn' -o pid=`
 	if [[ $DASHPID ]]; then
 		sudo kill -9 $DASHPID
 		sleep 25
 	fi
-	exit
 }
 
 function backUpDatabase(){
@@ -217,6 +219,9 @@ if [[ "$#" -gt 0 ]];then
 	until [[ "$ITER" -gt "$#" ]]
 	do
 		case "${!ITER}" in
+			"-k"|"--kill")
+				killServer
+				;;
 			"-r"|"--restart")
 				killServer
 				runServer
@@ -225,9 +230,6 @@ if [[ "$#" -gt 0 ]];then
 				killServer
 				buildServer
 				runServer
-				;;
-			"-k"|"--kill")
-				killServer
 				;;
 			"-b"|"--backup")
 				backUpDatabase
@@ -252,13 +254,13 @@ if [[ "$#" -gt 0 ]];then
 else
 	echo -e "ERROR: Please supply an argument!" 
 	echo -e "INSTALLATION:"
-	echo -e "\t- Install:          --install"
-	echo -e "\t- Configure:        --configure-database"
+	echo -e "\t- Install:           --install"
+	echo -e "\t- Configure:         --configure-database"
 	echo -e "DLU SERVER OPERATIONS:"
-	echo -e "\t- Kill server:      -k/--kill"
-	echo -e "\t- Restart server:   -r/--restart"
-	echo -e "\t- Recompile server: -R/--recompile"
-	echo -e "\t- Back up Database: -b/--backup"
+	echo -e "\t- Kill server:       -k/--kill"
+	echo -e "\t- Restart server:    -r/--restart"
+	echo -e "\t- Recompile server:  -R/--recompile"
+	echo -e "\t- Back up Database:  -b/--backup"
 	echo -e "NEXUS DASHBOARD:"
-	echo -e "\t- Restart Nexus Dashboard: -d/--dashboard"
+	echo -e "\t- Restart Dashboard: -d/--dashboard"
 fi
