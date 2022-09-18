@@ -34,7 +34,7 @@ function installDependencies(){
 	
 	# Install any other dependencies (via apt for debian-ish distros)
 	sudo apt-get update
-	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev
+	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache
 
 	### Install Nexus Dashboard dependencies
 	pip3 install gunicorn
@@ -146,7 +146,8 @@ function configureDatabase(){
 	
 	read -p "Make an admin account? [y/n]: " MAKEUSER
 	if [[ $MAKEUSER == "y" ]]; then
-		"$DLUQSREPO/DarkflameServer/build/MasterServer" -a
+		cd "$DLUQSREPO/DarkflameServer/build/"
+		./MasterServer -a
 	fi
 	
 	# Generate random 32 character string for you. You're welcome.
@@ -158,26 +159,25 @@ function configureDatabase(){
 	flask db upgrade
 }
 
-# In development
+# You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https and dns
 function installApache(){
 	read -p "Enter the DNS name of the server: " DOMAINNAME
 
 	sed -i "s/ServerName change.this.to.your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu-sites-available.conf"
 
-	sudo ln -s "$DLUQSREPO/config/dlu-sites-available.conf" /etc/apache2/sites-available/dlu.conf
-	sudo ln -s /etc/apache2/sites-available/dlu.conf        /etc/apache2/sites-enabled/dlu.conf
+	sudo ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
+	sudo ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
 
-	sudo a2ensite "$DOMAINNAME"
-
-	sudo a2enmod proxy
-	sudo a2enmod proxy_http
-	sudo a2enmod rewrite
-	sudo a2enmod ssl
+	sudo a2enmod proxy proxy_http rewrite ssl
+	sudo systemctl restart apache2
+	
+	sudo certbot --apache
 }
 
 ### OPERATIONS FUNCTIONS ###
 
 function runServer() {
+	# You can't run MasterServer from just anywhere, or it can crash when trying to create logfiles
 	cd "$DLUQSREPO/DarkflameServer/build/"
 	sudo ./MasterServer &
 }
@@ -262,14 +262,15 @@ if [[ "$#" -gt 0 ]];then
 else
 	echo -e "ERROR: Please supply an argument!" 
 	echo -e "INSTALLATION:"
-	echo -e "\t- Install:           --install"
-	echo -e "\t- Configure:         --configure-database"
+	echo -e "\t- Install DLU:           --install"
+	echo -e "\t- Configure:             --configure-database"
+	echo -e "\t- Install Apache2 Proxy: --install"
 	echo -e "DLU SERVER OPERATIONS:"
-	echo -e "\t- Kill server:       -k/--kill"
-	echo -e "\t- Restart server:    -r/--restart"
-	echo -e "\t- Recompile server:  -R/--recompile"
-	echo -e "\t- Back up Database:  -b/--backup"
+	echo -e "\t- Kill server:           -k/--kill"
+	echo -e "\t- Restart server:        -r/--restart"
+	echo -e "\t- Recompile server:      -R/--recompile"
+	echo -e "\t- Back up Database:      -b/--backup"
 	echo -e "NEXUS DASHBOARD:"
-	echo -e "\t- Restart Dashboard: -d/--dashboard"
-	echo -e "\t- Kill Dashboard:    -dk/--dashboard-kill"
+	echo -e "\t- Restart Dashboard:     -d/--dashboard"
+	echo -e "\t- Kill Dashboard:        -dk/--dashboard-kill"
 fi
