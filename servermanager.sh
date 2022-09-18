@@ -34,7 +34,7 @@ function installDependencies(){
 	
 	# Install any other dependencies (via apt for debian-ish distros)
 	sudo apt-get update
-	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache
+	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask
 
 	### Install Nexus Dashboard dependencies
 	pip3 install gunicorn
@@ -146,7 +146,8 @@ function configureDatabase(){
 	# If you change the database name/etc., you'll need to manually change those
 	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
-	read -p "\nMake an admin account? [y/n]: " MAKEUSER
+	echo -e "\n"
+	read -p "Make an admin account? [y/n]: " MAKEUSER
 	if [[ $MAKEUSER == "y" ]]; then
 		cd "$DLUQSREPO/DarkflameServer/build/"
 		./MasterServer -a
