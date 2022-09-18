@@ -145,7 +145,7 @@ function configureDatabase(){
 	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
 	read -p "Make an admin account? [y/n]: " MAKEUSER
-	if [[ $MAKEUSER == "y"]]; then
+	if [[ $MAKEUSER == "y" ]]; then
 		"$DLUQSREPO/DarkflameServer/build/MasterServer" -a
 	fi
 	
