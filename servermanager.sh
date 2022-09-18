@@ -260,6 +260,9 @@ if [[ "$#" -gt 0 ]];then
 			"--configure-database")
 				configureDatabase
 				;;
+			"--install-proxy")
+				installApache
+				;;
 			*)
 				;;
 	esac
@@ -271,7 +274,7 @@ else
 	echo -e "INSTALLATION:"
 	echo -e "\t- Install DLU:           --install"
 	echo -e "\t- Configure:             --configure-database"
-	echo -e "\t- Install Apache2 Proxy: --install"
+	echo -e "\t- Install Apache2 Proxy: --install-proxy"
 	echo -e "DLU SERVER OPERATIONS:"
 	echo -e "\t- Kill server:           -k/--kill"
 	echo -e "\t- Restart server:        -r/--restart"
