@@ -64,6 +64,7 @@ function hookClient() {
 	ln -s "$CLIENTROOT/res/brickprimitives" "$DLUQSREPO/NexusDashboard/app/luclient/brickprimitives"
 	ln -s "$CLIENTROOT/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/textures"
 	ln -s "$CLIENTROOT/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/ui"
+	ln -s "$DLUQSREPO/config/nexusdashboard.py"              "$DLUQSREPO/NexusDashboard/app/settings.py"
 
 	unzip "$DLUQSREPO/NexusDashboard/brickdb.zip" -d "$DLUQSREPO/NexusDashboard/"
 
@@ -140,6 +141,10 @@ function configureDatabase(){
 	# Add database password in the Nexus Dashboard config
 	# If you change the database name/etc., you'll need to manually change those
 	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
+	
+	# Generate random 32 character string for you. You're welcome.
+	RANDOMSTRING=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`
+	sed -i "s|APP_SECRET_KEY = \"\"|APP_SECRET_KEY = \"$RANDOMSTRING\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 }
 
 # In development
