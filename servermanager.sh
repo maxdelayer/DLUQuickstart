@@ -34,7 +34,7 @@ function installDependencies(){
 	
 	# Install any other dependencies (via apt for debian-ish distros)
 	sudo apt-get update
-	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask
+	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask python3-gunicorn
 
 	### Install Nexus Dashboard dependencies
 	pip3 install gunicorn
