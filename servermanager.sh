@@ -193,7 +193,7 @@ function killServer() {
 # Testing
 function runDashboard() {
 	cd "$DLUQSREPO/NexusDashboard/"
-	gunicorn -b :8000 -w wsgi:app
+	gunicorn -b :8000 -w 4 wsgi:app
 }
 
 # Testing
