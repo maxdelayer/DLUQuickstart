@@ -94,7 +94,7 @@ function hookClient() {
 	# Convert fdb to sqlite
 	python3 "$DLUQSREPO/utils/utils/fdb_to_sqlite.py" --sqlite_path "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$CLIENTROOT/res/cdclient.fdb"
 
-	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/cdclient.sqlite"
+	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/app/luclient/res/cdclient.sqlite"
 	
 	# Manual SQLITE migration running since the above has been inconsistent from my experience:
 	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql"           | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
