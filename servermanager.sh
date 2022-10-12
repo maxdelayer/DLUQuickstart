@@ -5,6 +5,14 @@ DLUQSREPO=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CLIENTROOT="$DLUQSREPO/client"
 DATABASENAME="DLU"
 
+function isScriptRoot(){
+	$USERID=`id -u`
+	if [[ $USERID -ne 0 ]]; then
+		echo "Cancelling: you must run this function as root"
+		exit 1
+	fi
+}
+
 ### INSTALLATION FUNCTIONS ###
 
 # This grabs all the other repositories used (DarkFlameServer, NexusDashboard, and lcdr utils)
@@ -33,8 +41,8 @@ function installDependencies(){
 	updateSubmodules
 	
 	# Install any other dependencies (via apt for debian-ish distros)
-	sudo apt-get update
-	sudo apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask python3-gunicorn
+	apt-get update
+	apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask python3-gunicorn
 
 	### Install Nexus Dashboard dependencies
 	pip3 install gunicorn
@@ -42,9 +50,9 @@ function installDependencies(){
 
 	### CREATE DATABASE
 	echo -e "Creating database..."
-	echo "CREATE DATABASE IF NOT EXISTS $DATABASENAME;" | sudo mysql -u root
+	echo "CREATE DATABASE IF NOT EXISTS $DATABASENAME;" | mysql -u root
 	
-	sudo mysql -u root $DATABASENAME < "$DLUQSREPO/DarkflameServer/migrations/dlu/0_initial.sql"
+	mysql -u root $DATABASENAME < "$DLUQSREPO/DarkflameServer/migrations/dlu/0_initial.sql"
 
 	### Compile DLU
 	buildDLU
@@ -137,9 +145,9 @@ function configureDatabase(){
 	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 
 	# Create the database user
-	echo "CREATE USER '$MYSQLUSER'@'$MYSQLHOST' IDENTIFIED WITH mysql_native_password BY '$MYSQLPASS';" | sudo mysql -u root 
-	echo "GRANT ALL ON $MYSQLDB . * TO '$MYSQLUSER'@'$MYSQLHOST';" | sudo mysql -u root 
-	echo "FLUSH PRIVILEGES;" | sudo mysql -u root 
+	echo "CREATE USER '$MYSQLUSER'@'$MYSQLHOST' IDENTIFIED WITH mysql_native_password BY '$MYSQLPASS';" | mysql -u root 
+	echo "GRANT ALL ON $MYSQLDB . * TO '$MYSQLUSER'@'$MYSQLHOST';" | mysql -u root 
+	echo "FLUSH PRIVILEGES;" | mysql -u root 
 
 	# Add database password in the Nexus Dashboard config
 	# If you change the database name/etc., you'll need to manually change those
@@ -171,22 +179,22 @@ function installApache(){
 
 	sed -i "s/ServerName your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
 
-	# TODO; set external_ip based on DNS, or allow it manually
-	#read -p "Auto grab IP from this domain name?" IPCHOOSE
-	#if [[ $IPCHOOSE == "y" ]]; then
-	#	EXTIP=``
-	#else
-	#	read -p "Enter the external IP of the server:" EXTIP
-	#fi
-	#sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g"         "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	# Set external_ip based on DNS, or allow it manually
+	read -p "Auto grab IP from domain $DOMAINNAME?" IPCHOOSE
+	if [[ $IPCHOOSE == "y" ]]; then
+		EXTIP=`dig +short $DOMAINNAME | tail -n1`
+	else
+		read -p "Manually enter the external IP of the server:" EXTIP
+	fi
+	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 
-	sudo ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
-	sudo ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
+	ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
+	ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
 
-	sudo a2enmod proxy proxy_http rewrite ssl
-	sudo systemctl restart apache2
+	a2enmod proxy proxy_http rewrite ssl
+	systemctl restart apache2
 	
-	sudo certbot --apache
+	certbot --apache
 }
 
 ### OPERATIONS FUNCTIONS ###
@@ -194,7 +202,7 @@ function installApache(){
 function runServer() {
 	# You can't run MasterServer from just anywhere, or it can crash when trying to create logfiles
 	cd "$DLUQSREPO/DarkflameServer/build/"
-	sudo ./MasterServer &
+	./MasterServer &
 }
 
 function buildServer() {
@@ -205,7 +213,8 @@ function buildServer() {
 function killServer() {
 	MASTERPID=`ps -C 'MasterServer' -o pid=`
 	if [[ $MASTERPID ]]; then
-		sudo kill -9 $MASTERPID
+		kill -9 $MASTERPID
+		echo "Waiting 25 seconds to ensure server is dead..."
 		sleep 25
 	fi
 }
@@ -218,16 +227,20 @@ function runDashboard() {
 function killDashboard() {
 	DASHPID=`ps -C 'gunicorn' -o pid=`
 	if [[ $DASHPID ]]; then
-		sudo kill -9 $DASHPID
+		kill -9 $DASHPID
+		echo "Waiting 25 seconds to ensure dashboard is dead..."
 		sleep 25
 	fi
 }
 
 function backUpDatabase(){
 	read -p "What should the backup be named?" BACKUPNAME
-	sudo mysqldump "$DATABASENAME" > "$DLUQSREPO/$BACKUPNAME"
+	mysqldump "$DATABASENAME" > "$DLUQSREPO/$BACKUPNAME"
 	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
 }
+
+# Ensure script runs as root
+isScriptRoot
 
 # TODO; Polish input section
 # Get arguments
