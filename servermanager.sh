@@ -6,8 +6,7 @@ CLIENTROOT="$DLUQSREPO/client"
 DATABASENAME="DLU"
 
 function isScriptRoot(){
-	$USERID=`id -u`
-	if [[ $USERID -ne 0 ]]; then
+	if [[ $UID -ne 0 ]]; then
 		echo "Cancelling: you must run this function as root"
 		exit 1
 	fi
