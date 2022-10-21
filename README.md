@@ -1,15 +1,15 @@
 # DLUQuickstart
-Various jank resources slapped together in <24hrs to make running your own Darkflame Universe server easier. Automates *some* parts of the DLU dedicated server installation.
-
-I'm writing this pretty late and on short notice so forgive any mistakes as I'm sure there are many.
+Automates *most* parts of the DLU (Darkflame LEGO Universe) dedicated server installation.
 
 # Disclaimer
 
 This is intended to make it much **easier** for someone **with some prior unix command line experience** to set up their own DLU server for themselves and their friends. I would not necessarily recommend this as a plug-and-play solution to a nontechnical audience. 
 
-If you want to google esoteric problems and learn and problem solve and have the time to waste doing it? Awesome, I hope this helps you in your journey. If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
+If you want to google esoteric problems and learn and problem solve and have the time to waste doing it? Awesome, I hope this helps you in your journey. This repository is built for debian-derived linux distributions such as Ubuntu, and as such relies on `apt` as a package manager. I've tried to keep it comprehensible enough to read, so if you want you use it as a living reference for your own scripts or troubleshooting your own manual installation, keep that perspective in mind. This repository is also tailored towards running a server in the long term on a dedicated system, hence the Nexus Dashboard installation through an Apache2 proxy that tries to configure with https on a domain.
 
-In the event where things aren't explained here, check DarkflameServer's readme, it may elaborate, or it may just confuse you further.
+If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
+
+In the event where things aren't explained here, check DarkflameServer's readme, it may elaborate on the subject, and be advised that any upstream changes may cause unexpected behavior.
 
 ## Table of Contents:
 
@@ -18,21 +18,33 @@ In the event where things aren't explained here, check DarkflameServer's readme,
  - Step 3: Acquiring & Extracting Client
  - Step 4: Linking Client Files To Server
  - Step 5: Server Configuration
- - Step 5: Operations/Production
+ - Step 6: Operations/Production
 
 ## Step 1: Provisioning Infrastructure
 
 I may update this for a more detailed guide later, but the quick answer is: use AWS or GCP. GCP is easier to learn and work with than AWS if you have no cloud experience, although nowadays I mostly deploy via AWS. The point is, do something disposable in the cloud, please be careful when you're, but also be mindful that cloud services cost money and you when to destroy your infrastructure. **This is not a tutorial on using cloud services properly.**
 
-### Specs
+If you intend to run your server on a domain, make sure you point that domain to the IP address of your server infrastructure before running the installation scripts (DNS setup is required for the ```--install-proxy``` subcommand)
 
-On AWS, a t3.Small instance has worked fine for me thus far, and a t3.micro instance was causing problems. So, whatever you do, probably best to have at least 2GB of RAM. 20gb of storage gives you some wiggle room.
+### Recommendations
 
-This repository is built for debian-derived linux distributions such as Ubuntu.
+#### Hardware Specs
+
+On AWS, a t3.Medium instance is recommended for it's 4GB of RAM. 20gb of storage gives you some wiggle room.
+
+#### Networking
+
+Ensure that inbound traffic from ports 80, 443, 1001, 2005, and 3000-3300 is allowed. These are for the Nexus Dashboard Website and it's HTTPS proxy, the authentication server, chat server, and any world servers. By default, port 22 will be necessary to have open by default in order to SSH into your server for management, but it is recommended to limit access to port 22 to your IP address as a best practice. 
 
 ### AWS Tutorial
 
 Coming soon:tm: (Maybe)
+
+1. Set up a VPC
+2. Set up EC2 instance
+3. Elastic IP Address
+4. Configure security group
+5. Long-Term Recommendations
 
 ### GCP Tutorial
 
@@ -56,38 +68,38 @@ sudo ./servermanager.sh --install
 
 ## Step 4: Server Configuration
 
-Now you need to actually configure the server in the way that you want. AKA - set your passwords. This part has some automation but also lots of manual work.
+*If* you already are migrating a pre-existing server's database to a new DLUQuickstart installation, now is the time to import your backed up database file:
 
-- **Edit** `createcreds.sh` **and change the password to something that isn't the default**
-  - Please... don't forget to do this.
-- Run `createcreds.sh`
-  - Instead of having you edit the same information for every server config file, this script does it all for you, as well as adds the database user to MySQL and to `config/credentials.py`
-- **Edit the "SECRET_KEY" value in `config/credentials.py` according to the instructions within**
-  - Look, that's what they said to do, and it seems like a pretty good idea.
-- **Edit `DarkflameServer/build/masterconfig.ini` manually**
-  - Change the `external_ip` value to the ip address of your server
+```bash
+sudo mysql DLU < filename.sql
+```
+
+Either way, you will need to configure your database. It will prompt you to set up a password for the database, as well as create an admin user account if you wish to. If you migrated an existing database, you do not need to create a new admin account. If you are creating the database for the first time, an admin account is necessary.
+
+```bash
+./servermanager --configure-database
+```
+
+In order to run Nexus Dashboard, you must run servermanager one more time. This will prompt you for your domain that the server will be running on. It is highly recommended to register and configure a domain to enable HTTPS and prevent users from needing to edit their `boot.cfg` file in the event your server's IP address changes.
+
+```bash
+./servermanager --install-proxy
+```
 
 ## Step 5: Operations/Production
 
 Now you've edited the file you need, you can begin to run things and follow DLU's documentation a bit more closely.
 
-- Generate an admin account
-```bash
-# From within DarkflameServer/build/
-sudo ./MasterServer -a
-```
-- Run the AccountManager webserver
-```bash
-# From within AccountManager/
-python3 app.py
-```
-- Go to your server's IP address, port 5000 in your web browser (https://127.0.0.1:5000)
-  - Log in with that admin account and generate keys
-  - Direct players to that website's `/activate` page to use those keys to create an account
 - Use `servermanager.sh` to run your server:
-  - Run the server: `./servermanager.sh -r`
+  - Run/restart the server: `./servermanager.sh -r`
   - Turn off the server: `./servermanager.sh -k`
   - Recompile and restart the server with the latest updates: `./servermanager.sh -R`
-  - Consider using servermanager.sh as a cron job for scheduled server reboots
+    - Consider using servermanager.sh as a cron job for scheduled server reboots
+  - Run/Restart Nexus Dashboard: `./servermanager.sh -d`
+  - Turn off Nexus Dashboard: `./servermanager.sh -dk`
+- Go to your domain in a web browser to access Nexus Dashboard
+  - Log in with that admin account to generate keys
+    - Tip: Making one key with an absurd number of uses will reduce the amount of times you need to generate keys, if you are opening up your server to the public.
+  - Direct players to that website to create their accounts
 
 # Good luck!
