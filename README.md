@@ -58,6 +58,12 @@ So, you have some linux server up and running that you have access to. Great. He
 git clone https://github.com/maxdelayer/DLUQuickstart
 ```
 
+For future steps, make sure you are in the directory of the cloned repository:
+
+```bash
+cd DLUQuickstart
+```
+
 ## Step 3: Install Server
 
 All server configuration and management has been consolidated into a single script, `servermanager.sh`. To install your server, you run:
@@ -68,16 +74,16 @@ sudo ./servermanager.sh --install
 
 ## Step 4: Server Configuration
 
+You will need to configure your database. It will prompt you to set up a password for the database, as well as create an admin user account if you wish to. If you plan on migrating an existing database, you do not need to create a new admin account. If you are creating the database for the first time, an admin account is necessary.
+
+```bash
+sudo ./servermanager.sh --configure-database
+```
+
 *If* you already are migrating a pre-existing server's database to a new DLUQuickstart installation, now is the time to import your backed up database file:
 
 ```bash
 sudo mysql DLU < filename.sql
-```
-
-Either way, you will need to configure your database. It will prompt you to set up a password for the database, as well as create an admin user account if you wish to. If you migrated an existing database, you do not need to create a new admin account. If you are creating the database for the first time, an admin account is necessary.
-
-```bash
-sudo ./servermanager.sh --configure-database
 ```
 
 In order to run Nexus Dashboard, you must run servermanager one more time. This will prompt you for your domain that the server will be running on. It is highly recommended to register and configure a domain to enable HTTPS and prevent users from needing to edit their `boot.cfg` file in the event your server's IP address changes.
