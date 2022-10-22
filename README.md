@@ -3,13 +3,16 @@ Automates *most* parts of the DLU (Darkflame LEGO Universe) dedicated server ins
 
 # Disclaimer
 
-This is intended to make it much **easier** for someone **with some prior unix command line experience** to set up their own DLU server for themselves and their friends. I would not necessarily recommend this as a plug-and-play solution to a nontechnical audience. 
+This is intended to make it much **easier** for someone **with some prior unix command line experience** to set up their own DLU server for themselves and their friends. I would not necessarily recommend this as a plug-and-play solution to a nontechnical audience.  If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
 
-If you want to google esoteric problems and learn and problem solve and have the time to waste doing it? Awesome, I hope this helps you in your journey. This repository is built for debian-derived linux distributions such as Ubuntu, and as such relies on `apt` as a package manager. I've tried to keep it comprehensible enough to read, so if you want you use it as a living reference for your own scripts or troubleshooting your own manual installation, keep that perspective in mind. This repository is also tailored towards running a server in the long term on a dedicated system, hence the Nexus Dashboard installation through an Apache2 proxy that tries to configure with https on a domain.
+This project is built around some core assumptions:
+ - You want to run your LEGO Universe server over an extended period of time
+ - You will to run your LEGO Universe server on dedicated hardware (ideally via some cloud service provider)
+ - You will run your LEGO Universe server on a debian-derived linux distribution (I've tested this on Ubuntu) that has the `apt` package manager installed
+ 
+If you break from any of thse assumptions, don't fret, just keep in mind the perspective from which this was written, and potentially you may want to adapt to better suit your purposes. At it's core, if you are running this on any other configuration of infrastructure, be it hardware or software, you may gain a be able to reverse-engineer an understanding of how to manually perform a similar install.
 
-If you just want to play the game and aren't very tech-savvy, just find someone who already has something hosted, or find a friend who *is* tech-savvy in terms of prior knowledge or the willingness to learn the things to host a server such as this.
-
-In the event where things aren't explained here, check DarkflameServer's readme, it may elaborate on the subject, and be advised that any upstream changes may cause unexpected behavior.
+In the event where things aren't explained here, check DarkflameServer's readme, it may elaborate on the subject, and be advised that any upstream changes may cause unexpected behavior. If issues arise you can always reach out to me, and I will reply when I can. If you have suggestions, please make an issue or raise it with me directly.
 
 ## Table of Contents:
 
