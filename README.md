@@ -40,11 +40,11 @@ Ensure that inbound traffic from ports 80, 443, 1001, 2005, and 3000-3300 is all
 
 Coming soon:tm: (Maybe)
 
-1. Set up a VPC
-2. Set up EC2 instance
-3. Elastic IP Address
-4. Configure security group
-5. Long-Term Recommendations
+#### Set up a VPC
+#### Set up EC2 instance
+#### Elastic IP Addresses
+#### Configure security group
+#### Long-Term Recommendations
 
 ### GCP Tutorial
 
@@ -77,26 +77,26 @@ sudo mysql DLU < filename.sql
 Either way, you will need to configure your database. It will prompt you to set up a password for the database, as well as create an admin user account if you wish to. If you migrated an existing database, you do not need to create a new admin account. If you are creating the database for the first time, an admin account is necessary.
 
 ```bash
-./servermanager --configure-database
+sudo ./servermanager.sh --configure-database
 ```
 
 In order to run Nexus Dashboard, you must run servermanager one more time. This will prompt you for your domain that the server will be running on. It is highly recommended to register and configure a domain to enable HTTPS and prevent users from needing to edit their `boot.cfg` file in the event your server's IP address changes.
 
 ```bash
-./servermanager --install-proxy
+sudo ./servermanager.sh --install-proxy
 ```
 
 ## Step 5: Operations/Production
 
 Now you've edited the file you need, you can begin to run things and follow DLU's documentation a bit more closely.
 
-- Use `servermanager.sh` to run your server:
-  - Run/restart the server: `./servermanager.sh -r`
-  - Turn off the server: `./servermanager.sh -k`
-  - Recompile and restart the server with the latest updates: `./servermanager.sh -R`
+- Use `servermanager.sh` as root to run your server:
+  - Run/restart the server: `sudo ./servermanager.sh -r`
+  - Turn off the server: `sudo ./servermanager.sh -k`
+  - Recompile and restart the server with the latest updates: `sudo  ./servermanager.sh -R`
     - Consider using servermanager.sh as a cron job for scheduled server reboots
-  - Run/Restart Nexus Dashboard: `./servermanager.sh -d`
-  - Turn off Nexus Dashboard: `./servermanager.sh -dk`
+  - Run/Restart Nexus Dashboard: `sudo  ./servermanager.sh -d`
+  - Turn off Nexus Dashboard: `sudo  ./servermanager.sh -dk`
 - Go to your domain in a web browser to access Nexus Dashboard
   - Log in with that admin account to generate keys
     - Tip: Making one key with an absurd number of uses will reduce the amount of times you need to generate keys, if you are opening up your server to the public.
