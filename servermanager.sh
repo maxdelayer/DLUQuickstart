@@ -14,7 +14,7 @@ function isScriptRoot(){
 
 ### INSTALLATION FUNCTIONS ###
 
-# This grabs all the other repositories used (DarkFlameServer, NexusDashboard, and lcdr utils)
+# This grabs all the other repositories used (DarkFlameServer & NexusDashboard)
 function updateSubmodules(){
 	git pull
 	git submodule update --init --recursive
@@ -41,7 +41,7 @@ function installDependencies(){
 	
 	# Install any other dependencies (via apt for debian-ish distros)
 	apt-get update
-	apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask python3-gunicorn
+	apt-get install -y python3 python3-pip gcc cmake mysql-server zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache python3-flask python3-gunicorn gunicorn
 
 	### Install Nexus Dashboard dependencies
 	pip3 install gunicorn
@@ -98,17 +98,9 @@ function hookClient() {
 	fi
 	ln -s "$CLIENTROOT/locale/locale.xml" "$DLUQSREPO/DarkflameServer/build/res/locale/locale.xml"
 
-	# Convert fdb to sqlite
-	python3 "$DLUQSREPO/utils/utils/fdb_to_sqlite.py" --sqlite_path "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$CLIENTROOT/res/cdclient.fdb"
-
+	# Create link to SQLite for nexus dashboard
+	# CDServer will be created by the server on boot
 	ln -s "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/app/luclient/res/cdclient.sqlite"
-	
-	# Manual SQLITE migration running since the above has been inconsistent from my experience:
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/0_nt_footrace.sql"           | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/1_fix_overbuild_mission.sql" | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/2_script_component.sql"      | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/3_plunger_gun_fix.sql"       | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
-	echo ".read $DLUQSREPO/DarkflameServer/migrations/cdserver/4_nt_footrace_parrot.sql"    | sqlite3 "$DLUQSREPO/DarkflameServer/build/res/CDServer.sqlite"
 }
 
 # In development
@@ -123,25 +115,10 @@ function configureDatabase(){
 	read -s -p "Enter the password for the newly created database user: " MYSQLPASS
 	
 	# Edit all the config files for each server with this information
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
-	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
-	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/authconfig.ini"
-
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
-	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
-	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/chatconfig.ini"
-
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
-	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
-	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
-
-	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
-	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
-	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^mysql_host=.*$/mysql_host=$MYSQLHOST/g"         "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i "s/^mysql_database=.*$/mysql_database=$MYSQLDB/g"   "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i "s/^mysql_username=.*$/mysql_username=$MYSQLUSER/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i "s/^mysql_password=.*$/mysql_password=$MYSQLPASS/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 
 	# Create the database user
 	echo "CREATE USER '$MYSQLUSER'@'$MYSQLHOST' IDENTIFIED WITH mysql_native_password BY '$MYSQLPASS';" | mysql -u root 
@@ -179,13 +156,13 @@ function installApache(){
 	sed -i "s/ServerName your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
 
 	# Set external_ip based on DNS, or allow it manually
-	read -p "Auto grab IP from domain $DOMAINNAME?" IPCHOOSE
+	read -p "Auto grab IP from domain $DOMAINNAME? (y/n): " IPCHOOSE
 	if [[ $IPCHOOSE == "y" ]]; then
 		EXTIP=`dig +short $DOMAINNAME | tail -n1`
 	else
 		read -p "Manually enter the external IP of the server:" EXTIP
 	fi
-	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
+	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 
 	ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
 	ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
