@@ -89,7 +89,7 @@ function hookClient() {
 	ln -s "$CLIENTROOT/res/names"               "$DLUQSREPO/DarkflameServer/build/res/names"
 	ln -s "$CLIENTROOT/res/maps"                "$DLUQSREPO/DarkflameServer/build/res/maps"
 
-	ln -s "$CLIENTROOT/res/cdclient.fdb"     "$CLIENTROOT/res/cdclient.fdb"
+	ln -s "$CLIENTROOT/res/cdclient.fdb"     "$DLUQSREPO/DarkflameServer/build/res/cdclient.fdb"
 
 	# Unzip navmeshes
 	unzip "$DLUQSREPO/DarkflameServer/resources/navmeshes.zip" -d "$DLUQSREPO/DarkflameServer/build/res/maps/"
