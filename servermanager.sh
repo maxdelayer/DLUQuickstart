@@ -89,6 +89,8 @@ function hookClient() {
 	ln -s "$CLIENTROOT/res/names"               "$DLUQSREPO/DarkflameServer/build/res/names"
 	ln -s "$CLIENTROOT/res/maps"                "$DLUQSREPO/DarkflameServer/build/res/maps"
 
+	ln -s "$CLIENTROOT/res/cdclient.fdb"     "$CLIENTROOT/res/cdclient.fdb"
+
 	# Unzip navmeshes
 	unzip "$DLUQSREPO/DarkflameServer/resources/navmeshes.zip" -d "$DLUQSREPO/DarkflameServer/build/res/maps/"
 
@@ -210,7 +212,7 @@ function killDashboard() {
 }
 
 function backUpDatabase(){
-	read -p "What should the backup be named?" BACKUPNAME
+	read -p "What should the backup be named? " BACKUPNAME
 	mysqldump "$DATABASENAME" > "$DLUQSREPO/$BACKUPNAME"
 	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
 }
