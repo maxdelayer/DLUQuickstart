@@ -129,7 +129,7 @@ function configureDatabase(){
 
 	# Add database password in the Nexus Dashboard config
 	# If you change the database name/etc., you'll need to manually change those
-	sed -i "s|DB_PASS=\"pleasechangethis\"|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
+	sed -i "s|^DB_PASS=.*$|DB_PASS=\"$MYSQLPASS\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
 	echo -e "\n"
 	read -p "Make an admin account? [y/n]: " MAKEUSER
