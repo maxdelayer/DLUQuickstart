@@ -167,10 +167,12 @@ function installApache(){
 
 	# Move error page into position for sexier errors
 	mkdir -p /var/www/html/error
-	ln -s "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
+	cp "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
+	#ln -s "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
 	
 	# Link static assets for use by apache error pages
-	ln -s "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/static
+	#ln -s "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/static
+	cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/static
 
 	a2enmod proxy proxy_http rewrite ssl
 	systemctl restart apache2
