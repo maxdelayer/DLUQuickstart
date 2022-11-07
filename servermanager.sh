@@ -172,7 +172,7 @@ function installApache(){
 	
 	# Link static assets for use by apache error pages
 	#ln -s "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/static
-	cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/static
+	cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/error/static
 
 	a2enmod proxy proxy_http rewrite ssl
 	systemctl restart apache2
