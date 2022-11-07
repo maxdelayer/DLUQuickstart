@@ -145,10 +145,6 @@ function configureDatabase(){
 	# Upgrade database with columns necessary for Nexus Dashboard
 	cd "$DLUQSREPO/NexusDashboard/"
 	flask db upgrade
-	
-	# Re-run any DLU server database migrations
-	cd "$DLUQSREPO/DarkflameServer/build/"
-	./MasterServer -m
 }
 
 # You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https and dns
