@@ -169,6 +169,13 @@ function installApache(){
 	ln -s "$DLUQSREPO/config/dlu.conf"          /etc/apache2/sites-available/dlu.conf
 	ln -s /etc/apache2/sites-available/dlu.conf /etc/apache2/sites-enabled/dlu.conf
 
+	# Move error page into position for sexier errors
+	mkdir -p /var/www/html/error
+	ln -s "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
+	
+	# Link static assets for use by apache error pages
+	ln -s "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/static
+
 	a2enmod proxy proxy_http rewrite ssl
 	systemctl restart apache2
 	
