@@ -66,7 +66,7 @@ function hookClient() {
 	if [[ ! -f "$CLIENTROOT/$CLIENTNAME" ]]; then
 		wget "$CLIENTLINK" -P "$CLIENTROOT/"
 		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
-	elif [[ ! -d "$CLIENTPATH" ]]
+	elif [[ ! -d "$CLIENTPATH" ]]; then
 		# re-extract if the download was a success but the extraction failed
 		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
 	fi
