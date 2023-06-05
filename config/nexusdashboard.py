@@ -6,7 +6,8 @@ APP_SYSTEM_ERROR_SUBJECT_LINE = APP_NAME + " system error"
 
 APP_SECRET_KEY = ""
 DB_PASS="pleasechangethis"
-APP_DATABASE_URI = "mysql+pymysql://dluadmin:" + DB_PASS + "@localhost/DLU"
+DB_HOST="localhost"
+APP_DATABASE_URI = "mysql+pymysql://dluadmin:" + DB_PASS + "@" + DB_HOST + "/DLU"
 
 CONFIG_LINK = False
 CONFIG_LINK_TITLE = ""
