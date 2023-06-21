@@ -42,7 +42,7 @@ function installDependencies(){
 	sudo apt-get update
 	sudo apt-get install -y python3 python3-pip gcc cmake zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev python3-flask python3-gunicorn gunicorn mariadb-client
 
-	# Potentially useful for secrets management in AWS
+	# Potentially useful for secrets management in AWS down the line
 	#apt-get install -y awscli
 
 	### Install Nexus Dashboard dependencies
@@ -101,7 +101,7 @@ function hookClient() {
 	ln -s "$DLUQSREPO/DarkflameServer/build/resServer/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/app/luclient/res/cdclient.sqlite"
 }
 
-# In development
+# In development - creating the local DB hasn't been fully tested yet
 function configureDatabase(){
 	echo "WARNING: This script simplifies the configuration of your DLU server, but is NOT a replacement for good secret/password management or a secure MySQL configuration. REMEMBER the passwords you use here"
 	
@@ -133,6 +133,7 @@ function configureDatabase(){
 	# Add database password in the Nexus Dashboard config
 	# If you change the database name/database admin name, you'll need to manually change those
 	# TODO: do some input sanitization to prevent goofy things from happening with wacky characters. You may need to edit the database password manually in sharedconfig.ini and nexusdashboard.py
+	#   https://unix.stackexchange.com/questions/32907/what-characters-do-i-need-to-escape-when-using-sed-in-a-sh-script
 	sed -i "s/^DB_PASS=.*$/DB_PASS=\"$DBPASS\"/g" "$DLUQSREPO/config/nexusdashboard.py"
 	sed -i "s/^DB_HOST=.*$/DB_HOST=\"$DBHOST\"/g" "$DLUQSREPO/config/nexusdashboard.py"
 	
@@ -158,6 +159,15 @@ function configureDatabase(){
 		read -p "Manually enter the public IP of the server:" EXTIP
 	fi
 	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	
+	# Auto generate a boot.cfg based on this domain information
+	rm "$DLUQSREPO/config/boot.cfg"
+	cp "$DLUQSREPO/config/custom.boot.cfg" "$DLUQSREPO/config/boot.cfg"
+	sed -i "s/your.url/$DOMAINNAME/g" "$DLUQSREPO/config/boot.cfg"
+	
+	# link this as a place to download from in nexusdashboard
+	# Accessible via 'https://your.url/static/boot.cfg'
+	ln -s "$DLUQSREPO/config/boot.cfg" "$DLUQSREPO/NexusDashboard/app/static/boot.cfg"
 }
 
 # You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https
@@ -165,7 +175,7 @@ function installApache(){
 	sudo apt-get install -y apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache
 
 	# Link included configuration file
-	ln -s "$DLUQSREPO/config/dlu.conf" /etc/apache2/sites-available/dlu.conf
+	sudo ln -s "$DLUQSREPO/config/dlu.conf" /etc/apache2/sites-available/dlu.conf
 
 	# Disable default apache site
 	sudo a2dissite 000-default default-ssl
@@ -173,21 +183,21 @@ function installApache(){
 	# Enable the proxy site
 	sudo a2ensite dlu
 
-	# Move error page into position for sexier errors
-	mkdir -p /var/www/html/error
-	cp "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
+	# Move a custom error page into position for sexier errors
+	sudo mkdir -p /var/www/html/error
+	# TODO POLISH: get the linking permissions right. Until then, just copy
+	sudo cp "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
 	#ln -s "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
 	
-	# Link static assets for use by apache error pages
-	ln -s "$DLUQSREPO/NexusDashboard/app/static"  /var/www/html/error/static
-	#cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/error/static
+	# static assets for use by apache error pages
+	sudo cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/error/static
+	#ln -s "$DLUQSREPO/NexusDashboard/app/static"  /var/www/html/error/static
 
-	a2enmod proxy proxy_http rewrite ssl
-	systemctl restart apache2
+	sudo a2enmod proxy proxy_http rewrite ssl
+	sudo systemctl restart apache2
 	
 	certbot --apache
 }
-
 
 ### OPERATIONS FUNCTIONS ###
 function runServer() {
@@ -210,6 +220,9 @@ function killServer() {
 
 function runDashboard() {
 	cd "$DLUQSREPO/NexusDashboard/"
+	
+	# REFERENCE: you may want to tune the number used in '-w' depending on your infrastructure
+	# https://docs.gunicorn.org/en/stable/design.html#how-many-workers
 	gunicorn -b :8000 -w 4 wsgi:app &
 }
 
@@ -259,7 +272,6 @@ if [[ "$#" -gt 0 ]];then
 			"-R"|"--recompile")
 				killServer
 				buildServer
-				runServer
 				;;
 			"-d"|"--dashboard")
 				killDashboard
