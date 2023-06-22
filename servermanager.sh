@@ -4,10 +4,19 @@
 DLUQSREPO=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CLIENTROOT="$DLUQSREPO/client"
 
+# Global variables for database login info
+# user and database are sane defaults I've decided upon, and the host and password are asked for on runtime, when needed
 DBUSER="dluadmin"
 DBPASS=""
 DBHOST="localhost"
 DBNAME="DLU"
+
+# Global variable for tracking the decision to 
+HOSTCHOOSE="y"
+
+# Global variable for tracking if the datbase globals have been updated
+DBENTERED=false
+
 
 function isScriptRoot(){
 	if [[ $UID -ne 0 ]]; then
@@ -17,6 +26,22 @@ function isScriptRoot(){
 }
 
 ### INSTALLATION FUNCTIONS ###
+
+# Get user info on the database connection
+function dbconnect(){
+	# If we've already asked for this information and set the global variables, don't ask again
+	if [[ "$DBENTERED" == false ]]; then
+		read -s -p "Enter the password for database user: " DBPASS
+		echo -e "\n"
+		read -p "Are you connecting to a remote database? [y/n]: " HOSTCHOOSE
+		if [[ $HOSTCHOOSE == "y" || $HOSTCHOOSE == "Y" ]]; then
+			read -p "Enter the hostname for database: " DBHOST
+		else
+			DBHOST="localhost"
+		fi
+		DBENTERED=true
+	fi
+}
 
 # This grabs all the other repositories used (DarkFlameServer & NexusDashboard)
 function updateSubmodules(){
@@ -65,10 +90,16 @@ function hookClient() {
 	# Only downloads if the file isn't already present
 	if [[ ! -f "$CLIENTROOT/$CLIENTNAME" ]]; then
 		wget "$CLIENTLINK" -P "$CLIENTROOT/"
+	fi
+	
+	# Only extract if the folders we're expecting from extraction isn't there
+	if [[ ! -d "$CLIENTPATH/res/" ]]; then
 		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
-	elif [[ ! -d "$CLIENTPATH" ]]; then
-		# re-extract if the download was a success but the extraction failed
-		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
+		
+		# If we have just done an extraction, then the sqlite will be 'fresh' and we need to run migrations again the next time the masterserver starts
+		# Remove references to old sqlite migrations that may not be valid anymore
+		dbconnect
+		mysql -u $DBUSER -D $DBNAME -h $DBHOST -p$DBPASS -e "DELETE FROM migration_history WHERE name LIKE 'cdserver/%'"
 	fi
 
 	sed -i "s|^client_location=.*$|client_location=$CLIENTPATH/|g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
@@ -77,7 +108,7 @@ function hookClient() {
 	sed -i "s|^use_sudo_auth=.*$|use_sudo_auth=0|g" "$DLUQSREPO/DarkflameServer/build/masterconfig.ini"
 	
 	### Link Nexus Dashboard config
-	ln -s "$DLUQSREPO/config/nexusdashboard.py" "$DLUQSREPO/NexusDashboard/app/settings.py"
+	ln -sf "$DLUQSREPO/config/nexusdashboard.py" "$DLUQSREPO/NexusDashboard/app/settings.py"
 	
 	# Delete old symlinks
 	rm -rf "$DLUQSREPO/NexusDashboard/app/luclient/res"
@@ -87,68 +118,63 @@ function hookClient() {
 	mkdir "$DLUQSREPO/NexusDashboard/app/luclient/res"
 	
 	# Create file links
-	ln -s "$CLIENTPATH/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/locale"
-	ln -s "$CLIENTPATH/res/BrickModels"     "$DLUQSREPO/NexusDashboard/app/luclient/res/BrickModels"
-	ln -s "$CLIENTPATH/res/brickprimitives" "$DLUQSREPO/NexusDashboard/app/luclient/res/brickprimitives"
-	ln -s "$CLIENTPATH/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/res/textures"
-	ln -s "$CLIENTPATH/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/res/ui"
+	ln -sf "$CLIENTPATH/locale"              "$DLUQSREPO/NexusDashboard/app/luclient/locale"
+	ln -sf "$CLIENTPATH/res/BrickModels"     "$DLUQSREPO/NexusDashboard/app/luclient/res/BrickModels"
+	ln -sf "$CLIENTPATH/res/brickprimitives" "$DLUQSREPO/NexusDashboard/app/luclient/res/brickprimitives"
+	ln -sf "$CLIENTPATH/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/res/textures"
+	ln -sf "$CLIENTPATH/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/res/ui"
 
 	# TODO: review
 	cp "$CLIENTPATH/res/brickdb.zip" "$DLUQSREPO/NexusDashboard/app/luclient/res/brickdb.zip"
 
 	# Create link to SQLite for nexus dashboard
 	# CDServer will be created by the server on boot
-	ln -s "$DLUQSREPO/DarkflameServer/build/resServer/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/app/luclient/res/cdclient.sqlite"
+	ln -sf "$DLUQSREPO/DarkflameServer/build/resServer/CDServer.sqlite" "$DLUQSREPO/NexusDashboard/app/luclient/res/cdclient.sqlite"
 }
 
-# In development - creating the local DB hasn't been fully tested yet
-function configureDatabase(){
-	echo "WARNING: This script simplifies the configuration of your DLU server, but is NOT a replacement for good secret/password management or a secure MySQL configuration. REMEMBER the passwords you use here"
+# Update configuration files with information unique to your specific server
+function configure(){
+	echo "WARNING: This script simplifies the configuration of your DLU server, but is NOT a replacement for good secret/password management or a secure database configuration. REMEMBER the passwords you use here"
 	
-	read -s -p "Enter the password for database user: " DBPASS
-	echo -e "\n"
-	read -p "Are you connecting to a remote database? [y/n]: " HOSTCHOOSE
-	if [[ $HOSTCHOOSE == "y" || $HOSTCHOOSE == "Y" ]]; then
-		read -p "Enter the hostname for database: " DBHOST
-	else
+	# Update the DB connection info
+	dbconnect
+	
+	# TODO: test the local database creation makes sense
+	if [[ $HOSTCHOOSE != "y" && $HOSTCHOOSE != "Y" ]]; then
 		echo "Installing local database server..."
 		sudo apt-get update
-		sudo apt-get install mariadb-server
+		sudo apt-get install -y mariadb-server
 	
 		### CREATE DATABASE
 		echo -e "Creating database..."
-		echo "CREATE DATABASE IF NOT EXISTS $DBNAME;" | sudo mysql -u root
-		
-		echo "CREATE USER '$DBUSER'@'$DBHOST' IDENTIFIED BY '$DBPASS';" | sudo mysql -u root 
-		echo "GRANT ALL ON $DBNAME . * TO '$DBUSER'@'$DBHOST';" | sudo mysql -u root 
-		echo "FLUSH PRIVILEGES;" | sudo mysql -u root
+		sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
+		sudo mysql -u root -e "CREATE USER '$DBUSER'@'$DBHOST' IDENTIFIED BY '$DBPASS';"
+		sudo mysql -u root -e "GRANT ALL ON $DBNAME . * TO '$DBUSER'@'$DBHOST';"
+		sudo mysql -u root -e "FLUSH PRIVILEGES;"
 	fi
 	
+	# Sanitize the DB password for use with sed
+	# TODO: more things that will mess with sed replace: https://unix.stackexchange.com/questions/32907/what-characters-do-i-need-to-escape-when-using-sed-in-a-sh-script
+	DBPASSSAN=`echo "$DBPASS" | sed -e 's/&/\\\&/g'`
+	
 	# Edit all the config files for each server with this information
-	sed -i "s/^mysql_host=.*$/mysql_host=$DBHOST/g"         "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
-	sed -i "s/^mysql_database=.*$/mysql_database=$DBNAME/g"   "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
-	sed -i "s/^mysql_username=.*$/mysql_username=$DBUSER/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
-	sed -i "s/^mysql_password=.*$/mysql_password=$DBPASS/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	# This file won't exist until after a build
+	sed -i 's/^mysql_host=.*$/mysql_host='"$DBHOST"'/g'         "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i 's/^mysql_database=.*$/mysql_database='"$DBNAME"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i 's/^mysql_username=.*$/mysql_username='"$DBUSER"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i 's/^mysql_password=.*$/mysql_password='"$DBPASSSAN"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 
 	# Add database password in the Nexus Dashboard config
 	# If you change the database name/database admin name, you'll need to manually change those
-	# TODO: do some input sanitization to prevent goofy things from happening with wacky characters. You may need to edit the database password manually in sharedconfig.ini and nexusdashboard.py
-	#   https://unix.stackexchange.com/questions/32907/what-characters-do-i-need-to-escape-when-using-sed-in-a-sh-script
-	sed -i "s/^DB_PASS=.*$/DB_PASS=\"$DBPASS\"/g" "$DLUQSREPO/config/nexusdashboard.py"
-	sed -i "s/^DB_HOST=.*$/DB_HOST=\"$DBHOST\"/g" "$DLUQSREPO/config/nexusdashboard.py"
+	sed -i 's/^DB_PASS=.*$/DB_PASS="'"$DBPASSSAN"'"/g' "$DLUQSREPO/config/nexusdashboard.py"
+	sed -i 's/^DB_HOST=.*$/DB_HOST="'"$DBHOST"'"/g' "$DLUQSREPO/config/nexusdashboard.py"
 	
-	# Generate random 32 character string for you. You're welcome.
+	# Generate a random 32 character string for you. You're welcome.
 	RANDOMSTRING=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`
 	sed -i "s|APP_SECRET_KEY = \"\"|APP_SECRET_KEY = \"$RANDOMSTRING\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
-	echo -e "\n"
-	read -p "Make an admin account? [y/n]: " MAKEUSER
-	if [[ $MAKEUSER == "y" ]]; then
-		"$DLUQSREPO/DarkflameServer/build/MasterServer" -a
-	fi
-	
 	# Get DNS name for apache configuration
-	read -p "Enter the DNS name of the server: " DOMAINNAME
+	read -p "Enter the DNS name of THIS server: " DOMAINNAME
 	sed -i "s/ServerName your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
 
 	# Set external_ip based on DNS, or allow it manually
@@ -161,13 +187,13 @@ function configureDatabase(){
 	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 	
 	# Auto generate a boot.cfg based on this domain information
-	rm "$DLUQSREPO/config/boot.cfg"
+	rm -f "$DLUQSREPO/config/boot.cfg"
 	cp "$DLUQSREPO/config/custom.boot.cfg" "$DLUQSREPO/config/boot.cfg"
 	sed -i "s/your.url/$DOMAINNAME/g" "$DLUQSREPO/config/boot.cfg"
 	
 	# link this as a place to download from in nexusdashboard
 	# Accessible via 'https://your.url/static/boot.cfg'
-	ln -s "$DLUQSREPO/config/boot.cfg" "$DLUQSREPO/NexusDashboard/app/static/boot.cfg"
+	ln -sf "$DLUQSREPO/config/boot.cfg" "$DLUQSREPO/NexusDashboard/app/static/boot.cfg"
 }
 
 # You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https
@@ -175,7 +201,7 @@ function installApache(){
 	sudo apt-get install -y apache2 apache2-utils libexpat1 ssl-cert apache2-dev certbot python3-certbot-apache
 
 	# Link included configuration file
-	sudo ln -s "$DLUQSREPO/config/dlu.conf" /etc/apache2/sites-available/dlu.conf
+	sudo ln -sf "$DLUQSREPO/config/dlu.conf" /etc/apache2/sites-available/dlu.conf
 
 	# Disable default apache site
 	sudo a2dissite 000-default default-ssl
@@ -187,16 +213,42 @@ function installApache(){
 	sudo mkdir -p /var/www/html/error
 	# TODO POLISH: get the linking permissions right. Until then, just copy
 	sudo cp "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
-	#ln -s "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
+	#sudo ln -f "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
 	
 	# static assets for use by apache error pages
 	sudo cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/error/static
-	#ln -s "$DLUQSREPO/NexusDashboard/app/static"  /var/www/html/error/static
+	#sudo ln -f "$DLUQSREPO/NexusDashboard/app/static"  /var/www/html/error/static
 
 	sudo a2enmod proxy proxy_http rewrite ssl
 	sudo systemctl restart apache2
 	
-	certbot --apache
+	sudo certbot --apache
+}
+
+function initialize(){
+	# A first run of the server will allow the right file linking and database configuration
+	runServer
+	sleep 60
+	killServer
+
+	# Create an admin account on the game server if the user needs one
+	# Only do this for brand new servers
+	echo -e "\n"
+	read -p "Make a DLU admin account? [y/n]: " MAKEUSER
+	if [[ $MAKEUSER == "y" ]]; then
+		"$DLUQSREPO/DarkflameServer/build/MasterServer" -a
+	fi
+
+	# Upgrade database with columns necessary for Nexus Dashboard
+	# TODO: ensure this actually has a reliable statefulness and doesn't cause problems
+	cd "$DLUQSREPO/NexusDashboard/"
+	flask db upgrade
+	
+	# Run NexusDashboard once to generate static css file
+	# TODO: double check what else is in static/
+	runDashboard
+	sleep 20
+	killDashboard
 }
 
 ### OPERATIONS FUNCTIONS ###
@@ -235,17 +287,6 @@ function killDashboard() {
 	fi
 }
 
-function initialize(){
-	# A first run of the server will allow the right file linking and database configuration
-	runServer
-	sleep 60
-	killServer
-
-	# Upgrade database with columns necessary for Nexus Dashboard
-	cd "$DLUQSREPO/NexusDashboard/"
-	flask db upgrade
-}
-
 function backUpDatabase(){
 	read -p "What should the backup be named? " BACKUPNAME
 	mysqldump "$DBNAME" > "$DLUQSREPO/$BACKUPNAME"
@@ -255,13 +296,31 @@ function backUpDatabase(){
 # Ensure script runs as root
 #isScriptRoot
 
-# Get arguments
-if [[ "$#" -gt 0 ]];then 
+# Parse arguments in order
+if [[ "$#" -gt 0 ]]; then 
 	ITER=1
 
 	until [[ "$ITER" -gt "$#" ]]
 	do
 		case "${!ITER}" in
+			# Installation functions
+			"--install")
+				installDependencies
+				;;
+			"--configure")
+				configure
+				;;
+			"--initialize")
+				hookClient
+				initialize
+				;;
+			"--install-proxy")
+				installApache
+				;;
+			"-b"|"--backup")
+				backUpDatabase
+				;;
+			# Ops functions
 			"-k"|"--kill")
 				killServer
 				;;
@@ -280,20 +339,6 @@ if [[ "$#" -gt 0 ]];then
 			"-dk"|"--dashboard-kill")
 				killDashboard
 				;;
-			"--install")
-				installDependencies
-				hookClient
-				initialize
-				;;
-			"--configure")
-				configureDatabase
-				;;
-			"--install-proxy")
-				installApache
-				;;
-			"-b"|"--backup")
-				backUpDatabase
-				;;
 			*)
 				;;
 	esac
@@ -303,15 +348,16 @@ if [[ "$#" -gt 0 ]];then
 else
 	echo -e "ERROR: Please supply an argument!" 
 	echo -e "INSTALLATION:"
-	echo -e "\t- Install DLU:           --install"
-	echo -e "\t- Configure:             --configure"
-	echo -e "\t- Install Apache2 Proxy: --install-proxy"
+	echo -e "\t- Install deps + compile: --install"
+	echo -e "\t- Configure:              --configure"
+	echo -e "\t- Complete install:       --initialize"
+	echo -e "\t- Install Apache2 Proxy:  --install-proxy"
 	echo -e "DLU SERVER OPS:"
-	echo -e "\t- Kill server:           -k/--kill"
-	echo -e "\t- Restart server:        -r/--restart"
-	echo -e "\t- Recompile server:      -R/--recompile"
-	echo -e "\t- Back up Database:      -b/--backup"
+	echo -e "\t- Kill server:            -k/--kill"
+	echo -e "\t- Restart server:         -r/--restart"
+	echo -e "\t- Recompile server:       -R/--recompile"
+	echo -e "\t- Back up Database:       -b/--backup"
 	echo -e "NEXUS DASHBOARD OPS:"
-	echo -e "\t- Restart Dashboard:     -d/--dashboard"
-	echo -e "\t- Kill Dashboard:        -dk/--dashboard-kill"
+	echo -e "\t- Restart Dashboard:      -d/--dashboard"
+	echo -e "\t- Kill Dashboard:         -dk/--dashboard-kill"
 fi
