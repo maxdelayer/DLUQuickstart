@@ -288,8 +288,10 @@ function killDashboard() {
 }
 
 function backUpDatabase(){
+	dbconnect
+
 	read -p "What should the backup be named? " BACKUPNAME
-	mysqldump "$DBNAME" > "$DLUQSREPO/$BACKUPNAME"
+	mysqldump -h "$DBHOST" -u $DBUSER -p$DBPASS "$DBNAME" > "$DLUQSREPO/$BACKUPNAME"
 	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
 }
 
