@@ -9,10 +9,12 @@ DB_PASS="pleasechangethis"
 DB_HOST="localhost"
 APP_DATABASE_URI = "mysql+pymysql://dluadmin:" + DB_PASS + "@" + DB_HOST + "/DLU"
 
-CONFIG_LINK = False
-CONFIG_LINK_TITLE = ""
-CONFIG_LINK_HREF = ""
-CONFIG_LINK_TEXT = ""
+# These are shown in the 'about' page
+# boot.cfg will automatically be made and linked by servermanager.sh
+CONFIG_LINK = True
+CONFIG_LINK_TITLE = "Client Configuration File"
+CONFIG_LINK_HREF = "boot.cfg"
+CONFIG_LINK_TEXT = "Download boot.cfg"
 
 # Send Analytics for Developers to better fix issues
 ALLOW_ANALYTICS = False
