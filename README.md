@@ -92,7 +92,7 @@ All server configuration and management has been consolidated into a single scri
 The first step is:
 
 ```bash
-sudo ./servermanager.sh --install
+./servermanager.sh --install
 ```
 
 This will install most prerequesite software and compile the DLU server. This compilation process may take several minutes.
@@ -102,7 +102,7 @@ This will install most prerequesite software and compile the DLU server. This co
 This step generates the configuration files for both DLU and NexusDashboard. 
 
 ```bash
-sudo ./servermanager.sh --configure
+./servermanager.sh --configure
 ```
 
 It will prompt you for:
@@ -122,7 +122,7 @@ If you made a mistake in your configuration such as a mistyped password, or you 
 The next stage of the installation is the longest: initialization. It downloads and extracts other files needed to run the server and sets them up in the right spots. You may need to specify or change this portion of the script later down the line if the link embedded is no longer accurate. At the time of writing, it should work out of the box.
 
 ```bash
-sudo ./servermanager.sh --initialize
+./servermanager.sh --initialize
 ```
 
 After setting up those files, it does a first-time run of the DLU server and Nexus Dashboard to make any necessary changes to the database are set up.
@@ -140,7 +140,7 @@ The last step is to set up the apache webserver proxy. This is used to more easi
 The only user input is for certbot to get an SSL cert. You must enter an email address and agree to the certbot terms of service.
 
 ```bash
-sudo ./servermanager.sh --install-proxy
+./servermanager.sh --install-proxy
 ```
 
 ## Step 7: Operations/Production
