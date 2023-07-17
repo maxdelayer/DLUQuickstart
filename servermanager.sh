@@ -17,13 +17,9 @@ HOSTCHOOSE="y"
 # Global variable for tracking if the datbase globals have been updated
 DBENTERED=false
 
-
-function isScriptRoot(){
-	if [[ $UID -ne 0 ]]; then
-		echo "Cancelling: you must run this function as root"
-		exit 1
-	fi
-}
+### TWEAKED DEFAULT SETTINGS ###
+MAXBANDWIDTH="0"
+MAXMTU="768"
 
 ### INSTALLATION FUNCTIONS ###
 
@@ -139,7 +135,7 @@ function configure(){
 	# Update the DB connection info
 	dbconnect
 	
-	# TODO: test the local database creation makes sense
+	# Create the DB locally
 	if [[ $HOSTCHOOSE != "y" && $HOSTCHOOSE != "Y" ]]; then
 		echo "Installing local database server..."
 		sudo apt-get update
@@ -186,6 +182,11 @@ function configure(){
 	fi
 	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 	
+	# Set some slightly-more sane basic settings
+	sed -i 's/^maximum_outgoing_bandwidth=.*$/maximum_outgoing_bandwidth='"$MAXBANDWIDTH"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i 's/^maximum_mtu_size=.*$/maximum_mtu_size='"$MAXMTU"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i 's/^solo_racing=.*$/solo_racing=1/g' "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	
 	# Auto generate a boot.cfg based on this domain information
 	rm -f "$DLUQSREPO/config/boot.cfg"
 	cp "$DLUQSREPO/config/custom.boot.cfg" "$DLUQSREPO/config/boot.cfg"
@@ -226,12 +227,34 @@ function installApache(){
 }
 
 function initialize(){
-	# A first run of the server will allow the right file linking and database configuration
-	runServer
-	sleep 60
-	killServer
+	# Set up nexus dashboard and darkflameserver as systemd services
+	OSUSER=`whoami`
+	#mkdir -p ~/.config/systemd/user
+	mkdir -p "/home/$OSUSER/.config/systemd/user"
+	ln -sf "$DLUQSREPO/config/dlu.service"   "/home/$OSUSER/.config/systemd/user/dlu.service"
+	ln -sf "$DLUQSREPO/config/nexus.service" "/home/$OSUSER/.config/systemd/user/nexus.service"
+	
+	# Change working directory in systemd service files to reflect wherever you installed DLUQuickstart
+	sed -i 's|^WorkingDirectory=.*$|WorkingDirectory='"$DLUQSREPO"'/DarkflameServer/build/|g' "$DLUQSREPO/config/dlu.service"
+	sed -i 's|^WorkingDirectory=.*$|WorkingDirectory='"$DLUQSREPO"'/NexusDashboard/|g' "$DLUQSREPO/config/nexus.service"
+	# Get an absolute path to the MasterServer binary
+	sed -i 's|^ExecStart=.*$|ExecStart='"$DLUQSREPO"'/DarkflameServer/build/MasterServer|g' "$DLUQSREPO/config/dlu.service"
+	
+	# Reload user's systemd services
+	systemctl --user daemon-reload
+	
+	# Enable the services
+	systemctl --user enable dlu.service
+	systemctl --user enable nexus.service
 
-	# Create an admin account on the game server if the user needs one
+	### Run the server and dashboard ###
+	# This allows the proper file linking and database configuration
+	
+	systemctl --user start dlu.service
+	sleep 60
+	systemctl --user stop dlu.service
+
+	# Ask if we need to create an admin account on the game server if the user needs one
 	# Only do this for brand new servers
 	echo -e "\n"
 	read -p "Make a DLU admin account? [y/n]: " MAKEUSER
@@ -244,49 +267,20 @@ function initialize(){
 	cd "$DLUQSREPO/NexusDashboard/"
 	flask db upgrade
 	
-	# Run NexusDashboard once to generate static css file
+	# Run NexusDashboard once to generate static css file used by the apache2 proxy
 	# TODO: double check what else is in static/
-	runDashboard
+	systemctl --user start nexus.service
 	sleep 20
-	killDashboard
+	systemctl --user stop nexus.service
 }
 
 ### OPERATIONS FUNCTIONS ###
-function runServer() {
-	"$DLUQSREPO/DarkflameServer/build/MasterServer" &
-}
-
 function buildServer() {
 	updateSubmodules
 	buildDLU
 }
 
-function killServer() {
-	MASTERPID=`ps -C 'MasterServer' -o pid=`
-	if [[ $MASTERPID ]]; then
-		sudo kill -15 $MASTERPID
-		echo "Waiting to ensure server is dead..."
-		sleep 20
-	fi
-}
-
-function runDashboard() {
-	cd "$DLUQSREPO/NexusDashboard/"
-	
-	# REFERENCE: you may want to tune the number used in '-w' depending on your infrastructure
-	# https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-	gunicorn -b :8000 -w 4 wsgi:app &
-}
-
-function killDashboard() {
-	DASHPID=`ps -C 'gunicorn' -o pid=`
-	if [[ $DASHPID ]]; then
-		sudo kill -15 $DASHPID
-		echo "Waiting to ensure dashboard is dead..."
-		sleep 20
-	fi
-}
-
+# It's recommended you shut down the server temporarily while you do this
 function backUpDatabase(){
 	dbconnect
 
@@ -294,9 +288,6 @@ function backUpDatabase(){
 	mysqldump -h "$DBHOST" -u $DBUSER -p$DBPASS "$DBNAME" > "$DLUQSREPO/$BACKUPNAME"
 	echo "Backup saved at $DLUQSREPO/$BACKUPNAME"
 }
-
-# Ensure script runs as root
-#isScriptRoot
 
 # Parse arguments in order
 if [[ "$#" -gt 0 ]]; then 
@@ -324,22 +315,26 @@ if [[ "$#" -gt 0 ]]; then
 				;;
 			# Ops functions
 			"-k"|"--kill")
-				killServer
+				systemctl --user stop dlu.service
 				;;
-			"-r"|"--restart")
-				killServer
-				runServer
+			"-r"|"--run"|"--restart")
+				systemctl --user stop dlu.service
+				systemctl --user start dlu.service
 				;;
 			"-R"|"--recompile")
-				killServer
+				systemctl --user stop dlu.service
 				buildServer
 				;;
 			"-d"|"--dashboard")
-				killDashboard
-				runDashboard
+				systemctl --user stop nexus.service
+				systemctl --user start nexus.service
 				;;
 			"-dk"|"--dashboard-kill")
-				killDashboard
+				systemctl --user stop nexus.service
+				;;
+			"-s"|"--status")
+				systemctl --user status dlu.service
+				systemctl --user status nexus.service
 				;;
 			*)
 				;;
@@ -358,6 +353,7 @@ else
 	echo -e "\t- Kill server:            -k/--kill"
 	echo -e "\t- Restart server:         -r/--restart"
 	echo -e "\t- Recompile server:       -R/--recompile"
+	echo -e "\t- Get server status:      -s/--status"
 	echo -e "\t- Back up Database:       -b/--backup"
 	echo -e "NEXUS DASHBOARD OPS:"
 	echo -e "\t- Restart Dashboard:      -d/--dashboard"

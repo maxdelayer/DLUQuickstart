@@ -1,0 +1,12 @@
+[Unit]
+Description=Darkflame Universe MasterServer
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory=/DarkflameServer/build/
+ExecStart=/DarkflameServer/build/MasterServer
+KillMode=mixed
+
+[Install]
+WantedBy=default.target
