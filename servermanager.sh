@@ -249,7 +249,6 @@ function initialize(){
 
 	### Run the server and dashboard ###
 	# This allows the proper file linking and database configuration
-	
 	systemctl --user start dlu.service
 	sleep 60
 	systemctl --user stop dlu.service
@@ -345,17 +344,17 @@ if [[ "$#" -gt 0 ]]; then
 else
 	echo -e "ERROR: Please supply an argument!" 
 	echo -e "INSTALLATION:"
-	echo -e "\t- Install deps + compile: --install"
-	echo -e "\t- Configure:              --configure"
-	echo -e "\t- Complete install:       --initialize"
-	echo -e "\t- Install Apache2 Proxy:  --install-proxy"
+	echo -e "\t- Download and compile:    --install"
+	echo -e "\t- Regenerate config files: --configure"
+	echo -e "\t- Finish server install:   --initialize"
+	echo -e "\t- Install Apache2 Proxy:   --install-proxy"
 	echo -e "DLU SERVER OPS:"
-	echo -e "\t- Kill server:            -k/--kill"
-	echo -e "\t- Restart server:         -r/--restart"
-	echo -e "\t- Recompile server:       -R/--recompile"
-	echo -e "\t- Get server status:      -s/--status"
-	echo -e "\t- Back up Database:       -b/--backup"
+	echo -e "\t- Stop server:             -k/--kill"
+	echo -e "\t- Restart server:          -r/--restart"
+	echo -e "\t- Recompile server:        -R/--recompile"
+	echo -e "\t- Get server status:       -s/--status"
+	echo -e "\t- Back up database:        -b/--backup"
 	echo -e "NEXUS DASHBOARD OPS:"
-	echo -e "\t- Restart Dashboard:      -d/--dashboard"
-	echo -e "\t- Kill Dashboard:         -dk/--dashboard-kill"
+	echo -e "\t- Restart Dashboard:       -d/--dashboard"
+	echo -e "\t- Kill Dashboard:          -dk/--dashboard-kill"
 fi

@@ -115,7 +115,7 @@ It will prompt you for:
 
 If you made a mistake in your configuration such as a mistyped password, or you didn't have your domain pointed to your server before this, then you can re-run this step to reset those configuration files without editing them directly.
 
-**NOTE:** *If* you already are migrating a pre-existing server's database to a new DLUQuickstart installation, after you have run ```--configure``` it is the time to import your backed up database file
+**NOTE:** *If* you already are migrating a pre-existing server's database to a new DLUQuickstart installation, this point of the install process is the time to import your backed up database file
 
 ## Step 5: Initialization
 
