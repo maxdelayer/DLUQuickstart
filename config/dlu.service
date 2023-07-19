@@ -2,6 +2,7 @@
 Description=Darkflame Universe MasterServer
 
 [Service]
+User=ubuntu
 Type=simple
 Restart=always
 WorkingDirectory=/DarkflameServer/build/

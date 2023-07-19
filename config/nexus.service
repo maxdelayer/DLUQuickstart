@@ -2,6 +2,7 @@
 Description=Nexus Dashboard
 
 [Service]
+User=ubuntu
 Type=simple
 Restart=always
 WorkingDirectory=/NexusDashboard/

@@ -228,11 +228,8 @@ function installApache(){
 
 function initialize(){
 	# Set up nexus dashboard and darkflameserver as systemd services
-	OSUSER=`whoami`
-	#mkdir -p ~/.config/systemd/user
-	mkdir -p "/home/$OSUSER/.config/systemd/user"
-	ln -sf "$DLUQSREPO/config/dlu.service"   "/home/$OSUSER/.config/systemd/user/dlu.service"
-	ln -sf "$DLUQSREPO/config/nexus.service" "/home/$OSUSER/.config/systemd/user/nexus.service"
+	sudo ln -sf "$DLUQSREPO/config/dlu.service"   "/etc/systemd/system/dlu.service"
+	sudo ln -sf "$DLUQSREPO/config/nexus.service" "/etc/systemd/system/nexus.service"
 	
 	# Change working directory in systemd service files to reflect wherever you installed DLUQuickstart
 	sed -i 's|^WorkingDirectory=.*$|WorkingDirectory='"$DLUQSREPO"'/DarkflameServer/build/|g' "$DLUQSREPO/config/dlu.service"
@@ -240,18 +237,23 @@ function initialize(){
 	# Get an absolute path to the MasterServer binary
 	sed -i 's|^ExecStart=.*$|ExecStart='"$DLUQSREPO"'/DarkflameServer/build/MasterServer|g' "$DLUQSREPO/config/dlu.service"
 	
+	# Set the user to be the current user
+	OSUSER=`whoami`
+	sed -i 's|^User=.*$|User='"$OSUSER"'|g' "$DLUQSREPO/config/dlu.service"
+	sed -i 's|^User=.*$|User='"$OSUSER"'|g' "$DLUQSREPO/config/nexus.service"
+	
 	# Reload user's systemd services
-	systemctl --user daemon-reload
+	sudo systemctl daemon-reload
 	
 	# Enable the services
-	systemctl --user enable dlu.service
-	systemctl --user enable nexus.service
+	sudo systemctl enable dlu.service
+	sudo systemctl enable nexus.service
 
 	### Run the server and dashboard ###
 	# This allows the proper file linking and database configuration
-	systemctl --user start dlu.service
+	sudo systemctl start dlu.service
 	sleep 60
-	systemctl --user stop dlu.service
+	sudo systemctl stop dlu.service
 
 	# Ask if we need to create an admin account on the game server if the user needs one
 	# Only do this for brand new servers
@@ -268,9 +270,9 @@ function initialize(){
 	
 	# Run NexusDashboard once to generate static css file used by the apache2 proxy
 	# TODO: double check what else is in static/
-	systemctl --user start nexus.service
+	sudo systemctl start nexus.service
 	sleep 20
-	systemctl --user stop nexus.service
+	sudo systemctl stop nexus.service
 }
 
 ### OPERATIONS FUNCTIONS ###
@@ -314,26 +316,26 @@ if [[ "$#" -gt 0 ]]; then
 				;;
 			# Ops functions
 			"-k"|"--kill")
-				systemctl --user stop dlu.service
+				sudo systemctl stop dlu.service
 				;;
 			"-r"|"--run"|"--restart")
-				systemctl --user stop dlu.service
-				systemctl --user start dlu.service
+				sudo systemctl stop dlu.service
+				sudo systemctl start dlu.service
 				;;
 			"-R"|"--recompile")
-				systemctl --user stop dlu.service
+				sudo systemctl stop dlu.service
 				buildServer
 				;;
 			"-d"|"--dashboard")
-				systemctl --user stop nexus.service
-				systemctl --user start nexus.service
+				sudo systemctl stop nexus.service
+				sudo systemctl start nexus.service
 				;;
 			"-dk"|"--dashboard-kill")
-				systemctl --user stop nexus.service
+				sudo systemctl stop nexus.service
 				;;
 			"-s"|"--status")
-				systemctl --user status dlu.service
-				systemctl --user status nexus.service
+				sudo systemctl status dlu.service
+				sudo systemctl status nexus.service
 				;;
 			*)
 				;;
