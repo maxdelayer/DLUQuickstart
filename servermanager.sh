@@ -142,11 +142,20 @@ function configure(){
 		sudo apt-get install -y mariadb-server
 	
 		### CREATE DATABASE
-		echo -e "Creating database..."
-		sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
-		sudo mysql -u root -e "CREATE USER '$DBUSER'@'$DBHOST' IDENTIFIED BY '$DBPASS';"
-		sudo mysql -u root -e "GRANT ALL ON $DBNAME . * TO '$DBUSER'@'$DBHOST';"
-		sudo mysql -u root -e "FLUSH PRIVILEGES;"
+		# Only create databse if it doesn't exist
+		DBEXISTS=`sudo mysql -Ns -u root -e "SHOW DATABASES LIKE 'DLU'"`
+		if [[ ! "$DBEXISTS" == "DLU" ]]; then
+			echo -e "Creating database..."
+			sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
+			sudo mysql -u root -e "CREATE USER '$DBUSER'@'$DBHOST' IDENTIFIED BY '$DBPASS';"
+			sudo mysql -u root -e "GRANT ALL ON $DBNAME . * TO '$DBUSER'@'$DBHOST';"
+			sudo mysql -u root -e "FLUSH PRIVILEGES;"
+		else
+			echo "Updating database user password..."
+			# Database exists, but lets update the password of the user
+			sudo mysql -u root -e "ALTER USER '$DBUSER'@'$DBHOST' IDENTIFIED BY '$DBPASS';"
+			sudo mysql -u root -e "FLUSH PRIVILEGES;"
+		fi
 	fi
 	
 	# Sanitize the DB password for use with sed
@@ -170,22 +179,27 @@ function configure(){
 	sed -i "s|APP_SECRET_KEY = \"\"|APP_SECRET_KEY = \"$RANDOMSTRING\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
 	# Get DNS name for apache configuration
-	read -p "Enter the DNS name of THIS server: " DOMAINNAME
-	sed -i "s/ServerName your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
-
-	# Set external_ip based on DNS, or allow it manually
-	read -p "Auto grab public IP from domain $DOMAINNAME? [y/n]: " IPCHOOSE
-	if [[ $IPCHOOSE == "y" ]]; then
-		EXTIP=`dig +short $DOMAINNAME | tail -n1`
-	else
-		read -p "Manually enter the public IP of the server:" EXTIP
+	# TODO: better branching on domain name if people are using a local IP or not, let them select local IP and reflect in boot.cfg
+	echo -e "DLUQuickstart can configure itself in a variety of ways based on where you are hosting the server. If it is a server for other people to access via the internet (using a domain pointing to this server's IP address) then it will set the configuration files for that. If you are creating a server just to be hosted on your local system to play singleplayer, then it is a 'localhost' server\n"
+	read -p "Is this an internet server (y) or a localhost server (n)? [y/n]: " DNSCHOOSE
+	if [[ $DNSCHOOSE != "y" && $DNSCHOOSE != "Y" ]]; then
+		read -p "Enter the DNS name of THIS server: " DOMAINNAME
+		
+		# Set external_ip based on DNS, or allow it manually
+		read -p "Auto grab public IP from domain $DOMAINNAME? [y/n]: " IPCHOOSE
+		if [[ $IPCHOOSE == "y" ]]; then
+			EXTIP=`dig +short $DOMAINNAME | tail -n1`
+		else
+			read -p "Manually enter the public IP of the server:" EXTIP
+		fi
+	else 
+		DOMAINNAME='localhost'
+		#read -p "Manually enter the public IP of the server:" EXTIP
+		EXTIP='localhost'
 	fi
-	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 	
-	# Set some slightly-more sane basic settings
-	sed -i 's/^maximum_outgoing_bandwidth=.*$/maximum_outgoing_bandwidth='"$MAXBANDWIDTH"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
-	sed -i 's/^maximum_mtu_size=.*$/maximum_mtu_size='"$MAXMTU"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
-	sed -i 's/^solo_racing=.*$/solo_racing=1/g' "$DLUQSREPO/DarkflameServer/build/worldconfig.ini"
+	sed -i "s/ServerName your.domain.name/ServerName $DOMAINNAME/g" "$DLUQSREPO/config/dlu.conf"
+	sed -i "s/^external_ip=localhost.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 	
 	# Auto generate a boot.cfg based on this domain information
 	rm -f "$DLUQSREPO/config/boot.cfg"
@@ -195,6 +209,38 @@ function configure(){
 	# link this as a place to download from in nexusdashboard
 	# Accessible via 'https://your.url/static/boot.cfg'
 	ln -sf "$DLUQSREPO/config/boot.cfg" "$DLUQSREPO/NexusDashboard/app/static/boot.cfg"
+	
+	# Set some slightly-more sane basic settings
+	sed -i 's/^maximum_outgoing_bandwidth=.*$/maximum_outgoing_bandwidth='"$MAXBANDWIDTH"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	sed -i 's/^maximum_mtu_size=.*$/maximum_mtu_size='"$MAXMTU"'/g' "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
+	
+	# Set any other settings specified in customsettings.txt if it exists
+	# The format it expects is 'filename=settingname=settingvalue' for any of the DLU .inis or NexusDashboard's settings.py
+	# Intent: make a simple file that lets people automate their custom configs for their deployed servers
+	if [[ -f "$DLUQSREPO/config/customsettings.txt" ]]; then
+		echo -e "\nLoading custom settings:"
+		SETTINGSFILE=`cat "$DLUQSREPO/config/customsettings.txt"`
+		
+		for line in $SETTINGSFILE; do
+			CONFIGFILE=`echo $line | awk '{split($0,a,"="); print a[1]}'`
+			CONFIGSETTING=`echo $line | awk '{split($0,a,"="); print a[2]}'`
+			CONFIGVALUE=`echo $line | awk '{split($0,a,"="); print a[3]}'`
+			
+			if [[ "$CONFIGFILE" == "settings.py" ]]; then
+				CONFIGPATH="$DLUQSREPO/NexusDashboard/app"
+			else
+				CONFIGPATH="$DLUQSREPO/DarkflameServer/build"
+			fi
+			
+			echo "Adding '$CONFIGSETTING=$CONFIGVALUE' to '$CONFIGFILE'"
+			sed -i "s|^$CONFIGSETTING=.*$|$CONFIGSETTING=$CONFIGVALUE|g" "$CONFIGPATH/$CONFIGFILE"
+			
+			# If you can't find what we tried to search and replace (IE: there was no original setting there to update) then just append to the config file
+			if ! grep -q "$CONFIGSETTING=$CONFIGVALUE" "$CONFIGPATH/$CONFIGFILE"; then
+				echo -e "\n$CONFIGSETTING=$CONFIGVALUE" >> "$CONFIGPATH/$CONFIGFILE"
+			fi
+		done
+	fi
 }
 
 # You *could* just set gunicorn to export to 80, but by using apache as a proxy, it simplifies and standardizes other things, such as https
@@ -216,9 +262,14 @@ function installApache(){
 	sudo cp "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
 	#sudo ln -f "$DLUQSREPO/config/503.html" /var/www/html/error/503.html
 	
+	# Run NexusDashboard once to generate static css file used by the apache2 proxy
+	sudo systemctl start nexus.service
+	sleep 20
 	# static assets for use by apache error pages
 	sudo cp -r "$DLUQSREPO/NexusDashboard/app/static" /var/www/html/error/static
-	#sudo ln -f "$DLUQSREPO/NexusDashboard/app/static"  /var/www/html/error/static
+	# remove unnecessary static files
+	sudo rm -r /var/www/html/error/static/.webassets-cache/
+	sudo systemctl stop nexus.service
 
 	sudo a2enmod proxy proxy_http rewrite ssl
 	sudo systemctl restart apache2
@@ -228,6 +279,7 @@ function installApache(){
 
 function initialize(){
 	# Set up nexus dashboard and darkflameserver as systemd services
+	# This lets them be easily managed through a common interface
 	sudo ln -sf "$DLUQSREPO/config/dlu.service"   "/etc/systemd/system/dlu.service"
 	sudo ln -sf "$DLUQSREPO/config/nexus.service" "/etc/systemd/system/nexus.service"
 	
@@ -267,12 +319,6 @@ function initialize(){
 	# TODO: ensure this actually has a reliable statefulness and doesn't cause problems
 	cd "$DLUQSREPO/NexusDashboard/"
 	flask db upgrade
-	
-	# Run NexusDashboard once to generate static css file used by the apache2 proxy
-	# TODO: double check what else is in static/
-	sudo systemctl start nexus.service
-	sleep 20
-	sudo systemctl stop nexus.service
 }
 
 ### OPERATIONS FUNCTIONS ###
