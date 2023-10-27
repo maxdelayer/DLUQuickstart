@@ -19,11 +19,9 @@ In the event where things aren't explained here, check [DarkflameServer's readme
  - Step 0: What do you want?
  - Step 1: Provisioning Infrastructure
  - Step 2: Cloning this repo to said infrastructure
- - Step 3: Installing Dependencies & Compiling Server
- - Step 4: Generating Configuration Files
- - Step 5: Set up web proxy
- - Step 6: Initialization
- - Step 7: Operations/Production
+ - Step 3: Generating configuration file
+ - Step 4: Installation using config file
+ - Step 5: Operations/Production
 
 ## Step 0: What do you want?
 
@@ -85,65 +83,37 @@ For future steps, make sure you are in the directory of the cloned repository:
 cd DLUQuickstart
 ```
 
-## Step 3: Install Server
+Also, if you are importing from a previously existing server, make sure you have copied over your database dump file to your infrastructure.
 
-All server configuration and management has been consolidated into a single script, `servermanager.sh`. It has four key installation stages which you can run all at once *or* individually. For the sake of explanation I will go over each individually.
+## Step 3: Generate server configuration
 
-The first step is:
+All server configuration and management has been consolidated into a single script, `servermanager.sh`. It generates a configuration file, installs based on the information in said file, and is used for common tasks like starting, stopping, or backing up the data from your DLU server.
 
-```bash
-./servermanager.sh --install
-```
-
-This will install most prerequesite software and compile the DLU server. This compilation process may take several minutes.
-
-## Step 4: Server Configuration
-
-This step generates the configuration files for both DLU and NexusDashboard. 
+To install, you must first define your server configuration
 
 ```bash
-./servermanager.sh --configure
+./servermanager.sh --generate
 ```
 
-It will prompt you for:
- - The password to use on your database
- - Whether or not to create the database locally or connect to a remote database
-   - If you are connecting to a remote database, it will ask for the address of that database
- - The domain name of your server for the website configuration. 
-   - It will use this DNS name to grab the public IP address of the server, **however you can also set the MasterServer IP manually. **
-   - It is highly recommended to register and configure a domain for a multitude of reasons.
+It will prompt you for many things and save these choices to a file of your choosing. You can use this file in step 4.
 
-If you made a mistake in your configuration such as a mistyped password, or you didn't have your domain pointed to your server before this, then you can re-run this step to reset those configuration files without editing them directly.
+*Key Caveats*: If you pick the 'remote' database option, the script assumes you are using the same database name and user name specified at the top of the script, and all of that already exists in the database it tries to connect to. I don't expect most people to do that option, but if you are then you probably can figure that out.
 
-**NOTE:** *If* you already are migrating a pre-existing server's database to a new DLUQuickstart installation, this point of the install process is the time to import your backed up database file
+## Step 4: Server Installation
 
-## Step 5: Initialization
-
-The next stage of the installation is the longest: initialization. It downloads and extracts other files needed to run the server and sets them up in the right spots. You may need to specify or change this portion of the script later down the line if the link embedded is no longer accurate. At the time of writing, it should work out of the box.
+When you have the config file generated in step 3, you can install your DLU server with the following command:
 
 ```bash
-./servermanager.sh --initialize
+./servermanager.sh --install config.json
 ```
 
-After setting up those files, it does a first-time run of the DLU server and Nexus Dashboard to make any necessary changes to the database are set up.
+Some important notes:
+ - If you are using a local database and did not import from a pre-existing server, the script will prompt you to create the admin user during install. This admin user is required to manage the server with nexus dashboard
+ - If you are building an internet server and you didn't specify an email for your SSL certificate renewal, the script will prompt you for this during the install
 
-This will also ask whether or not to create a DLU admin account. 
-  - If you plan on migrating an existing database, you do not need to create a new admin account.
-  - If you are creating the database for the first time, an admin account is necessary.
+*Tip:* If you change the details of your configuration file, you can run ```./servermanager.sh --configure file.json``` and it will re-configure your server based on that configuration. This will regenerate local database passwords
 
-If you are running this at the same time as ```--configure```, it will remember your database connection information. If you run this on its own, it will ask for it again.
-
-## Step 6: Apache2 Proxy
-
-The last step is to set up the apache webserver proxy. This is used to more easily manage HTTPS, and provide better errors in the event Nexus Dashboard isn't running.
-
-The only user input is for certbot to get an SSL cert. You must enter an email address and agree to the certbot terms of service.
-
-```bash
-./servermanager.sh --install-proxy
-```
-
-## Step 7: Operations/Production
+## Step 5: Operations/Production
 
 Now that the server is ready to go, you can begin to run things and follow DLU's documentation a bit more closely.
 
@@ -157,11 +127,11 @@ Now that the server is ready to go, you can begin to run things and follow DLU's
     - Run/Restart Nexus Dashboard: `./servermanager.sh -d`
     - Turn off Nexus Dashboard: `./servermanager.sh -dk`
   - Get the status of the server and dashboard `./servermanager.sh -s`
-  - TIP: you can also use standard `systemctl` commands to manage the server such as `systemctl --user start dlu.service` or `systemctl --user stop nexus.service`
+  - *TIP:* you can also use standard `systemctl` commands to manage the server such as `systemctl --user start dlu.service` or `systemctl --user stop nexus.service`
 
 - Go to your domain in a web browser to access Nexus Dashboard
   - Log in with that admin account to generate keys
-    - Tip: Making one key with an absurd number of uses will reduce the amount of times you need to generate keys for new players since you can re-use that key
+    - Tip: keys can have multiple uses, or be disabled
   - Give players a valid play key you generated and then direct them to that website to create their accounts
   - Direct players to 'https://[your domain]/static/boot.cfg' to download the boot.cfg file they need to tell their client to connect to your server. They can also download this from the link at the bottom of the 'about' page in nexus dashboard.
 
