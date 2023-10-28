@@ -1,1 +1,0 @@
-worldconfig.ini=solo_racing=1

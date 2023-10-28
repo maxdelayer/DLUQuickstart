@@ -25,7 +25,7 @@ function buildDLU(){
 	sudo setcap 'cap_net_bind_service=+ep' "$DLUQSREPO/DarkflameServer/build/AuthServer"
 }
 
-# This grabs all the other repositories used (DarkFlameServer & NexusDashboard)
+# This updates all the other repositories used (DarkFlameServer & NexusDashboard)
 function updateSubmodules(){
 	git pull
 	
@@ -215,7 +215,7 @@ function configure(){
 				CONFIGPATH="$DLUQSREPO/DarkflameServer/build"
 			fi
 			
-			sed -i "s|^$CONFIGSETTING=.*$|$CONFIGSETTING=$CONFIGVALUE|g" "$CONFIGPATH/$CONFIGFILE"
+			sed -i "s|^$CONFIGSETTING\s*=.*$|$CONFIGSETTING=$CONFIGVALUE|g" "$CONFIGPATH/$CONFIGFILE"
 			
 			# If you can't find what we tried to search and replace (IE: there was no original setting there to update) then just append to the config file
 			if ! grep -q "$CONFIGSETTING=$CONFIGVALUE" "$CONFIGPATH/$CONFIGFILE"; then

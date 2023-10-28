@@ -1,2 +1,7 @@
 *.sql
 *.log
+*.json
+*.ini
+*.pem
+logs/*
+trash/*
