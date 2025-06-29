@@ -14,6 +14,7 @@ DBHOST="localhost"
 
 CONFIGFILENAME=""
 IMPORTFILE=""
+CLIENTPATH=""
 
 ### INSTALLATION FUNCTIONS ###
 # Build the server and flag binaries properly
@@ -21,19 +22,21 @@ function buildDLU(){
 	cd "$DLUQSREPO/DarkflameServer"
 	./build.sh
 	
-	# Makes it so authserver can use port 1001 without sudo
-	sudo setcap 'cap_net_bind_service=+ep' "$DLUQSREPO/DarkflameServer/build/AuthServer"
+	# Make it so authserver can use port 1001 without sudo
+	if [ -e "$DLUQSREPO/DarkflameServer/build/AuthServer" ]; then
+		sudo setcap 'cap_net_bind_service=+ep' "$DLUQSREPO/DarkflameServer/build/AuthServer"
+	fi
 }
 
 # This updates all the other repositories used (DarkFlameServer & NexusDashboard)
 function updateSubmodules(){
 	git pull
 	
-	if [ -z `ls "$DLUQSREPO/DarkflameServer/" | head -n 1` ]; then
-		git submodule update --init --recursive
-	fi
+	#if [ -z `ls "$DLUQSREPO/DarkflameServer/" | head -n 1` ]; then
+	#	git submodule update --init --recursive
+	#fi
 	
-	git submodule update --recursive --remote --merge
+	git submodule update --init --recursive --remote --merge
 }
 
 # Makes sure jq is installed
@@ -52,20 +55,26 @@ function installDependencies(){
 	
 	# Install any other dependencies (via apt for debian-ish distros)
 	sudo apt-get update
-	sudo apt-get install -y python3 python3-pip gcc cmake zlib1g zlib1g-dev unrar unzip sqlite libmagickwand-dev libssl-dev python3-flask python3-gunicorn gunicorn mariadb-client
-
+	sudo apt-get install -y python3 python3-pip gcc cmake zlib1g zlib1g-dev unrar unzip libmagickwand-dev libssl-dev mariadb-client jq
+	#sudo apt-get install -y python3-flask python3-gunicorn gunicorn
+	
 	# Potentially useful for secrets management in AWS down the line
 	#apt-get install -y awscli
 
 	### Install Nexus Dashboard dependencies
+	# Install python dependencies in a python virtual environment
+	if [ ! -d "$DLUQSREPO/.venv" ]; then
+		python3 -m venv "$DLUQSREPO/.venv"
+	fi
+	source "$DLUQSREPO/.venv/bin/activate"
 	pip3 install -r "$DLUQSREPO/NexusDashboard/requirements.txt" | grep -v 'already satisfied'
-
+	deactivate
+	
 	### Compile DLU
 	buildDLU
 }
 
-# References DB variables
-function hookClient() {
+function downloadClient() {
 	# Grab a lego universe client. If you have one, you can manually move it into place, if not, hey, check out this one I found:
 	CLIENTLINK="https://archive.org/download/lego-universe-unpacked/LEGO Universe (unpacked).rar"
 	CLIENTNAME="LEGO Universe (unpacked).rar"
@@ -76,27 +85,38 @@ function hookClient() {
 	CLIENTPATH="$CLIENTROOT"
 	
 	# Only downloads if the file isn't already present
-	if [[ ! -f "$CLIENTROOT/$CLIENTNAME" ]]; then
-		wget "$CLIENTLINK" -P "$CLIENTROOT/"
+	if [[ ! -f "$CLIENTPATH/$CLIENTNAME" ]]; then
+		wget "$CLIENTLINK" -P "$CLIENTPATH/"
 	fi
-	
+}
+
+function extractClient() {
 	# Only extract if the folders we're expecting from extraction isn't there
 	if [[ ! -d "$CLIENTPATH/res/" ]]; then
-		unrar x "$CLIENTROOT/$CLIENTNAME" "$CLIENTROOT/"
+		unrar x "$CLIENTPATH/$CLIENTNAME" "$CLIENTPATH/" -x@"$CLIENTPATH/exclude.txt"
+		# Using `-x@filename.txt` to exclude files that the server doesn't actually need
+		# This saves just over 10gb of space lol
 		
 		# If we have just done an extraction, then the sqlite file will be 'fresh' and we need to run migrations again the next time the MasterServer starts
 		# MasterServer does this if there aren't references that it's been run before in the database
 		
 		# Check if the table exists before trying to delete stuff from it
 		# Prevents an error on first run of a new database
-		# TODO: test this works
-		TABLEEXISTS=`mysql -Ns -u "$DBUSER" -D "$DBNAME" -h "$DBHOST" -p"$DBPASS" -e 'SHOW TABLES LIKE "migration_history"'`
-		if [[ ! "$TABLEEXISTS" == "migration_history" ]]; then
+		TABLEEXISTS="`mysql -Ns -u "$DBUSER" -D "$DBNAME" -h "$DBHOST" -p"$DBPASS" -e 'SHOW TABLES LIKE "migration_history"'`"
+		if [[ "$TABLEEXISTS" == "migration_history" ]]; then
 			# Remove references to old sqlite migrations that may not be valid anymore
 			mysql -u $DBUSER -D $DBNAME -h $DBHOST -p$DBPASS -e "DELETE FROM migration_history WHERE name LIKE 'cdserver/%'"
 		fi
 	fi
+}
 
+# References DB variables
+function hookClient() {
+	downloadClient
+
+	extractClient
+
+	# Set client location in config
 	sed -i "s|^client_location=.*$|client_location=$CLIENTPATH/|g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 
 	# Change config so that it doesn't launch authserver as root
@@ -119,7 +139,9 @@ function hookClient() {
 	ln -sf "$CLIENTPATH/res/textures"        "$DLUQSREPO/NexusDashboard/app/luclient/res/textures"
 	ln -sf "$CLIENTPATH/res/ui"              "$DLUQSREPO/NexusDashboard/app/luclient/res/ui"
 
-	# TODO: review
+	# unzip brickdb into the correct place
+	unzip -q "$CLIENTPATH/res/brickdb.zip" -d "$DLUQSREPO/NexusDashboard/app/luclient/res/"
+	# copy the zip anyways since otherwise it will freak out
 	cp "$CLIENTPATH/res/brickdb.zip" "$DLUQSREPO/NexusDashboard/app/luclient/res/brickdb.zip"
 
 	# Create link to SQLite for nexus dashboard
@@ -138,7 +160,7 @@ function configure(){
 	
 		### CREATE DATABASE
 		# Only create databse if it doesn't exist
-		DBEXISTS=`sudo mysql -Ns -u root -e "SHOW DATABASES LIKE 'DLU'"`
+		DBEXISTS="`sudo mysql -Ns -u root -e "SHOW DATABASES LIKE 'DLU'"`"
 		if [[ ! "$DBEXISTS" == "DLU" ]]; then
 			echo -e "Creating database..."
 			sudo mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DBNAME;"
@@ -155,7 +177,7 @@ function configure(){
 	
 	# Sanitize the DB password for use with sed
 	# TODO: more things that will mess with sed replace: https://unix.stackexchange.com/questions/32907/what-characters-do-i-need-to-escape-when-using-sed-in-a-sh-script
-	DBPASSSAN=`echo "$DBPASS" | sed -e 's/&/\\\&/g'`
+	DBPASSSAN="`echo "$DBPASS" | sed -e 's/&/\\\&/g'`"
 	
 	# Edit all the config files for each server with this information
 	# This file won't exist until after a build
@@ -170,7 +192,7 @@ function configure(){
 	sed -i 's/^DB_HOST=.*$/DB_HOST="'"$DBHOST"'"/g' "$DLUQSREPO/config/nexusdashboard.py"
 	
 	# Generate a random 32 character string for you. You're welcome.
-	RANDOMSTRING=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`
+	RANDOMSTRING="`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`"
 	sed -i "s|APP_SECRET_KEY = \"\"|APP_SECRET_KEY = \"$RANDOMSTRING\"|g" "$DLUQSREPO/config/nexusdashboard.py"
 	
 	# Get DNS name for apache configuration
@@ -179,7 +201,7 @@ function configure(){
 	# Grab the IP automatically if it wasn't specified
 	if [ "$SERVIP" == "null" ]; then
 		# TODO: can external_ip just be the domain given localhost works? what makes the most sense long-term?
-		EXTIP=`dig +short $DOMAINNAME | tail -n1`
+		EXTIP="`dig +short $DOMAINNAME | tail -n1`"
 	fi
 	sed -i "s/^external_ip=.*$/external_ip=$EXTIP/g" "$DLUQSREPO/DarkflameServer/build/sharedconfig.ini"
 	
@@ -288,9 +310,12 @@ function initialize(){
 	sed -i 's|^WorkingDirectory=.*$|WorkingDirectory='"$DLUQSREPO"'/NexusDashboard/|g' "$DLUQSREPO/config/nexus.service"
 	# Get an absolute path to the MasterServer binary
 	sed -i 's|^ExecStart=.*$|ExecStart='"$DLUQSREPO"'/DarkflameServer/build/MasterServer|g' "$DLUQSREPO/config/dlu.service"
+	# Use the python3 virtualenv to run Nexus Dashboard
+	sed -i 's|^ExecStart=.*$|ExecStart='"$DLUQSREPO"'/.venv/bin/python3 -m gunicorn -b :8000 -w 4 wsgi:app |g' "$DLUQSREPO/config/nexus.service"
 	
 	# Set the user to be the current user
-	OSUSER=`whoami`
+	# If you're using a service account, make sure you run servermanager.sh as the service account
+	OSUSER="`whoami`"
 	sed -i 's|^User=.*$|User='"$OSUSER"'|g' "$DLUQSREPO/config/dlu.service"
 	sed -i 's|^User=.*$|User='"$OSUSER"'|g' "$DLUQSREPO/config/nexus.service"
 	
@@ -305,7 +330,7 @@ function initialize(){
 	# This allows the proper file linking and database configuration
 	echo "Running the server to let it initialize things"
 	sudo systemctl start dlu.service
-	sleep 60
+	sleep 120
 	sudo systemctl stop dlu.service
 
 	# Upgrade database with columns necessary for Nexus Dashboard
@@ -473,7 +498,7 @@ function parseConfig() {
 		DBPASS=`jq -r '.server.db.password' "$CONFIGFILENAME"`
 		if [ "$DBPASS" = "null" ]; then
 			# If DB password isn't specified, generate one randomly
-			DBPASS=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`
+			DBPASS="`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1`"
 			
 			# Save the generated password to the json in the file
 			jq --arg arg "$DBPASS" '.server.db.password = $arg' "$CONFIGFILENAME" > "$CONFIGFILENAME.tmp"
@@ -524,6 +549,15 @@ if [[ "$#" -gt 0 ]]; then
 				break
 				;;
 			# Installation functions
+
+			"--pre-bake")
+				# These are the two longest times of the install - but can be done ahead of time regardless of one's configuration
+				installDependencies
+				downloadClient
+				
+				# Exit script after this
+				break
+				;;
 			"--install")
 				# Check next value for file name
 				ITER=$((ITER + 1))	
@@ -604,6 +638,7 @@ else
 	echo -e "\t- Generate config file:     -g/--generate"
 	echo -e "\t- Install from config file: --install [file]"
 	echo -e "\t- Reapply config to server: --configure [file]"
+	echo -e "\t- Pre-download necessary files: --pre-bake"
 	echo -e "DLU SERVER OPS:"
 	echo -e "\t- Stop server:       -k/--kill"
 	echo -e "\t- Restart server:    -r/--restart"

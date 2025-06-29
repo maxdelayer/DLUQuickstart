@@ -5,3 +5,5 @@
 *.pem
 logs/*
 trash/*
+client/*
+dluenv/*

@@ -6,10 +6,9 @@ User=ubuntu
 Type=simple
 Restart=always
 WorkingDirectory=/NexusDashboard/
-
 # REFERENCE: you may want to tune the number used in '-w' depending on your infrastructure
 # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-ExecStart=gunicorn -b :8000 -w 4 wsgi:app
+ExecStart=.venv/bin/python3 -m gunicorn -b :8000 -w 4 wsgi:app
 
 [Install]
 WantedBy=default.target

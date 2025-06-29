@@ -1,5 +1,6 @@
 [Unit]
 Description=Darkflame Universe MasterServer
+After=network.target
 
 [Service]
 User=ubuntu

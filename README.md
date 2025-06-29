@@ -1,5 +1,5 @@
 # DLUQuickstart
-Automates *most* parts of the DLU (Darkflame LEGO Universe) dedicated server installation.
+Automates the DLU (Darkflame LEGO Universe) dedicated server installation.
 
 # Disclaimer
 
@@ -37,7 +37,7 @@ I mostly deploy via AWS, but that's my choice for my specific situation. You can
 
 If you are running your game server and web frontend on the same machine as your database, I recommend at least 2 vcpus and 4GB of RAM. If you are separating your database to a different server, you can get away with 2vcpus and 2GB of RAM. On AWS, that would be a t3a.medium for a single instance, or a t3a.small instance for the game server with a RDS-managed db.t3.micro instance for the database. 
 
-Either way, 22gb of storage is the bare minimum I would recommend. I do not believe that paying more for SSD storage is necessary for this use case.
+Either way, 12gb of storage is the bare minimum I would recommend. I do not believe that paying more for SSD storage is necessary for this use case.
 
 #### Networking
 
@@ -53,7 +53,7 @@ Ensure that inbound traffic from ports 80, 443, 1001, 2005, and 3000-3300 is all
 
 By default, port 22 must have open in order to SSH into your server for management, but it is recommended to limit access to port 22 to your IP address as a best practice. 
 
-If you intend to run your server on a domain, make sure you point that domain to the IP address of your server infrastructure before running the installation scripts (DNS setup is *recommended* for the ```configure``` **required** for the ```--install-proxy``` subcommand)
+If you intend to run your server on a domain, make sure you point that domain to the IP address of your server infrastructure before running a `--install`
 
 ### AWS Tutorial
 
