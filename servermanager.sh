@@ -55,8 +55,7 @@ function installDependencies(){
 	
 	# Install any other dependencies (via apt for debian-ish distros)
 	sudo apt-get update
-	sudo apt-get install -y python3 python3-pip gcc cmake zlib1g zlib1g-dev unrar unzip libmagickwand-dev libssl-dev mariadb-client jq
-	#sudo apt-get install -y python3-flask python3-gunicorn gunicorn
+	sudo apt-get install -y python3 python3-pip python3-full python3-venv gcc cmake zlib1g zlib1g-dev unrar unzip libmagickwand-dev libssl-dev mariadb-client jq
 	
 	# Potentially useful for secrets management in AWS down the line
 	#apt-get install -y awscli
